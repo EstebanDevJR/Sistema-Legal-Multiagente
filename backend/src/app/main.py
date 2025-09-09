@@ -291,8 +291,8 @@ async def log_requests(request: Request, call_next):
     
     process_time = time.time() - start_time
     
-    # Log solo errores para evitar spam
-    if response.status_code >= 400:
+    # Log solo errores para evitar spam, excluyendo health checks
+    if response.status_code >= 400 and request.url.path not in ["/", "/health"]:
         logger.warning(
             f"{request.method} {request.url.path} - "
             f"Status: {response.status_code} - "
