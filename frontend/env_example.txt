@@ -1,0 +1,18 @@
+# Sistema Legal Multiagente - Frontend Environment Variables
+# Copia este archivo como .env.local y configura tus valores
+
+# ===========================================
+# CONFIGURACIÓN DE API (REQUERIDA)
+# ===========================================
+# URL base del backend API
+# Para desarrollo local:
+NEXT_PUBLIC_API_BASE_URL=http://localhost:8000
+
+# Para producción (reemplaza con tu URL de Render):
+# NEXT_PUBLIC_API_BASE_URL=https://your-backend-app.onrender.com
+
+# ===========================================
+# CONFIGURACIÓN DE DESARROLLO (OPCIONAL)
+# ===========================================
+# Deshabilitar telemetría de Next.js
+NEXT_TELEMETRY_DISABLED=1

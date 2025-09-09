@@ -1,0 +1,64 @@
+# Configuración para deployment en Render.com
+services:
+  - type: web
+    name: legal-agent-api
+    env: python
+    buildCommand: pip install -e .
+    startCommand: uvicorn src.app.main:app --host 0.0.0.0 --port $PORT
+    plan: free  # Cambiar a 'starter' para mejor performance
+    region: oregon  # Región más cercana a Colombia
+    branch: main
+    healthCheckPath: /health
+    
+    # Variables de entorno requeridas
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: PORT
+        value: 8000
+      - key: ENVIRONMENT  
+        value: production
+      - key: LOG_LEVEL
+        value: INFO
+        
+      # APIs requeridas (configurar en Render dashboard)
+      - key: OPENAI_API_KEY
+        sync: false  # Configurar manualmente en dashboard
+      - key: PINECONE_API_KEY  
+        sync: false
+      - key: PINECONE_INDEX_NAME
+        sync: false
+      - key: PINECONE_ENVIRONMENT
+        sync: false
+        
+      # APIs opcionales
+      - key: ELEVENLABS_API_KEY
+        sync: false
+      - key: AWS_ACCESS_KEY_ID
+        sync: false
+      - key: AWS_SECRET_ACCESS_KEY
+        sync: false
+      - key: AWS_REGION
+        value: us-east-1
+      - key: AWS_S3_BUCKET_NAME
+        sync: false
+      - key: LANGSMITH_API_KEY
+        sync: false
+      - key: LANGSMITH_PROJECT
+        value: legal-agent-colombia
+        
+    # Configuración de auto-deploy
+    autoDeploy: true
+    
+    # Configuración de dominio personalizado (opcional)
+    # customDomains:
+    #   - name: api.legalagent.co
+    
+    # Configuración de salud y escalado
+    numInstances: 1
+    
+    # Configuración de disco (solo para planes pagos)
+    # disk:
+    #   name: legal-agent-disk
+    #   mountPath: /opt/render/project/data
+    #   sizeGB: 1

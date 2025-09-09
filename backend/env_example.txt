@@ -1,0 +1,70 @@
+# Sistema Legal Multiagente - Variables de Entorno
+# Copia este archivo como .env y configura tus valores
+
+# ===========================================
+# CONFIGURACIÓN BÁSICA
+# ===========================================
+ENVIRONMENT=development
+PORT=8000
+LOG_LEVEL=INFO
+PYTHONPATH=.
+
+# ===========================================
+# APIs REQUERIDAS (CRÍTICAS)
+# ===========================================
+# OpenAI API Key - REQUERIDO
+OPENAI_API_KEY=sk-your-openai-api-key-here
+
+# Pinecone Configuration - REQUERIDO
+PINECONE_API_KEY=your-pinecone-api-key-here
+PINECONE_INDEX_NAME=legal-documents-colombia
+PINECONE_ENVIRONMENT=us-east-1-aws
+
+# ===========================================
+# APIs OPCIONALES
+# ===========================================
+# ElevenLabs para síntesis de voz
+ELEVENLABS_API_KEY=your-elevenlabs-api-key-here
+
+# AWS S3 para almacenamiento de documentos
+AWS_ACCESS_KEY_ID=your-aws-access-key
+AWS_SECRET_ACCESS_KEY=your-aws-secret-key
+AWS_REGION=us-east-1
+AWS_S3_BUCKET_NAME=legal-agent-documents
+
+# LangSmith para monitoreo (opcional)
+LANGSMITH_API_KEY=your-langsmith-api-key-here
+LANGSMITH_PROJECT=legal-agent-colombia
+
+# ===========================================
+# CONFIGURACIÓN DE SEGURIDAD
+# ===========================================
+# CORS - Orígenes permitidos (separados por coma)
+ALLOWED_ORIGINS=http://localhost:3000,http://localhost:5173,https://your-frontend-domain.vercel.app
+
+# Hosts confiables
+TRUSTED_HOSTS=localhost,127.0.0.1,your-backend-domain.onrender.com
+
+# Rate limiting
+REQUESTS_PER_MINUTE=300
+
+# ===========================================
+# CONFIGURACIÓN DE BASE DE DATOS (FUTURO)
+# ===========================================
+# DATABASE_URL=postgresql://user:password@host:port/database
+# REDIS_URL=redis://localhost:6379
+
+# ===========================================
+# CONFIGURACIÓN DE EMAIL (FUTURO)
+# ===========================================
+# SMTP_HOST=smtp.gmail.com
+# SMTP_PORT=587
+# SMTP_USERNAME=your-email@gmail.com
+# SMTP_PASSWORD=your-app-password
+# EMAIL_FROM=your-email@gmail.com
+
+# ===========================================
+# CONFIGURACIÓN DE MONITOREO
+# ===========================================
+# Sentry para error tracking (opcional)
+# SENTRY_DSN=your-sentry-dsn-here

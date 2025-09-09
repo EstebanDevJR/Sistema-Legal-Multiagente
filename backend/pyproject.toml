@@ -1,0 +1,239 @@
+[project]
+name = "legal-system-multiagent"
+version = "1.0.0"
+description = "Sistema Legal Multiagente - Consultas jurídicas inteligentes con IA especializada en derecho colombiano"
+authors = [
+    { name = "Esteban Ortiz", email = "esteban.ortiz.dev@gmail.com" },
+]
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.9"
+dependencies = [
+    # Core AI/ML frameworks
+    "langgraph>=0.2.6",
+    "langchain>=0.3.10",
+    "langchain-openai>=0.2.5",
+    "langchain-pinecone>=0.2.1",
+    "langchain-core>=0.3.10",
+    "langsmith>=0.1.0",
+    "openai>=1.0.0",
+    "pinecone-client>=5.0.0",
+    
+    # Web framework and server
+    "fastapi>=0.104.0",
+    "uvicorn[standard]>=0.24.0",
+    "pydantic>=2.5.0",
+    "python-multipart>=0.0.6",
+    "aiofiles>=23.2.1",
+    
+    # Cloud services and storage
+    "boto3>=1.34.0",
+    
+    # Voice services
+    "elevenlabs>=1.8.0",
+    "pydub>=0.25.1",
+    
+    # HTTP clients and networking
+    "requests>=2.31.0",
+    "httpx>=0.25.0",
+    
+    # Security and authentication
+    "python-jose[cryptography]>=3.3.0",
+    "passlib[bcrypt]>=1.7.4",
+    
+    # Email services
+    "email-validator>=2.1.0",
+    "jinja2>=3.1.2",
+    
+    # Configuration and environment
+    "python-dotenv>=1.0.1",
+    
+    # Date and time handling
+    "python-dateutil>=2.8.2",
+]
+
+
+[project.optional-dependencies]
+dev = [
+    "mypy>=1.11.1", 
+    "ruff>=0.6.1",
+    "pytest>=8.3.5",
+    "pytest-asyncio>=0.23.0",
+    "pytest-cov>=4.1.0",
+    "black>=23.0.0",
+    "isort>=5.12.0",
+]
+prod = [
+    "gunicorn>=21.2.0",
+    "psycopg2-binary>=2.9.7",
+    "redis>=5.0.0",
+]
+
+[build-system]
+requires = ["setuptools>=73.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["src"]
+[tool.setuptools.package-dir]
+"" = "."
+
+
+[tool.setuptools.package-data]
+"*" = ["py.typed"]
+
+[tool.ruff]
+target-version = "py39"
+line-length = 100
+
+lint.select = [
+    "E",    # pycodestyle errors
+    "W",    # pycodestyle warnings
+    "F",    # pyflakes
+    "I",    # isort
+    "B",    # flake8-bugbear
+    "C4",   # flake8-comprehensions
+    "UP",   # pyupgrade
+    "T201", # print statements
+]
+
+lint.ignore = [
+    "E501",  # line too long, handled by formatter
+    "B008",  # do not perform function calls in argument defaults
+    "B905",  # zip without explicit strict parameter
+    "UP006", # use dict instead of Dict for type annotations
+    "UP007", # use X | Y for type annotations
+    "UP035", # import from typing_extensions
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["T201"]  # allow print in tests
+"src/api/*" = ["T201"]  # allow print in API endpoints for logging
+
+[tool.ruff.lint.isort]
+known-first-party = ["src"]
+force-single-line = true
+
+[tool.mypy]
+python_version = "3.9"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+disallow_untyped_decorators = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+warn_unreachable = true
+strict_equality = true
+
+[[tool.mypy.overrides]]
+module = [
+    "elevenlabs.*",
+    "pinecone.*",
+    "boto3.*",
+    "pydub.*",
+]
+ignore_missing_imports = true
+
+[dependency-groups]
+dev = [
+    # Development tools
+    "anyio>=4.7.0",
+    "langgraph-cli[inmem]>=0.2.8",
+    
+    # Code quality and testing
+    "mypy>=1.13.0",
+    "pytest>=8.3.5",
+    "pytest-asyncio>=0.23.0",
+    "pytest-cov>=4.1.0",
+    "ruff>=0.8.2",
+    "black>=23.0.0",
+    "isort>=5.12.0",
+    
+    # Development server
+    "watchfiles>=0.21.0",
+]
+
+test = [
+    "pytest>=8.3.5",
+    "pytest-asyncio>=0.23.0",
+    "pytest-cov>=4.1.0",
+    "httpx>=0.25.0",
+    "faker>=22.0.0",
+]
+
+prod = [
+    "gunicorn>=21.2.0",
+    "psycopg2-binary>=2.9.7", 
+    "redis>=5.0.0",
+    "sentry-sdk[fastapi]>=1.40.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py", "*_test.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "--strict-markers",
+    "--strict-config",
+    "--cov=src",
+    "--cov-report=term-missing",
+    "--cov-report=html",
+    "--cov-fail-under=80",
+]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "integration: marks tests as integration tests",
+    "unit: marks tests as unit tests",
+]
+
+[tool.coverage.run]
+source = ["src"]
+omit = [
+    "*/tests/*",
+    "*/migrations/*",
+    "*/venv/*",
+    "*/__pycache__/*",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+]
+
+[tool.black]
+line-length = 100
+target-version = ['py39']
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  # directories
+  \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | build
+  | dist
+)/
+'''
+
+[tool.isort]
+profile = "black"
+line_length = 100
+multi_line_output = 3
+include_trailing_comma = true
+force_grid_wrap = 0
+use_parentheses = true
+ensure_newline_before_comments = true
+known_first_party = ["src"]

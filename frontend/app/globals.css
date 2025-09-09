@@ -1,0 +1,418 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* Added comment to force CSS rebuild and clear any cached prose classes */
+:root {
+  /* Updated color tokens to match dramatic lighting design brief */
+  --background: #000000; /* Pure black background */
+  --foreground: oklch(1 0 0); /* Pure white for text and highlights */
+  --card: oklch(0.95 0 0); /* Light gray for subtle backgrounds */
+  --card-foreground: oklch(0 0 0); /* Black text on light cards */
+  --popover: oklch(1 0 0); /* White for popover backgrounds */
+  --popover-foreground: oklch(0 0 0); /* Black text in popovers */
+  --primary: oklch(0.65 0.2 270); /* Violet accent for highlights */
+  --primary-foreground: oklch(1 0 0); /* White text on violet */
+  --secondary: oklch(0.95 0 0); /* Light gray for secondary elements */
+  --secondary-foreground: oklch(0 0 0); /* Black text on secondary */
+  --muted: oklch(0.25 0 0); /* Dark gray for muted elements */
+  --muted-foreground: oklch(0.95 0 0); /* Light gray text for muted */
+  --accent: oklch(0.65 0.2 270); /* Violet for interactive elements */
+  --accent-foreground: oklch(1 0 0); /* White text on accent */
+  --destructive: oklch(0.6 0.2 40); /* Amber for destructive actions */
+  --destructive-foreground: oklch(1 0 0); /* White text for destructive */
+  --border: oklch(1 0 0); /* White borders for contrast */
+  --input: oklch(0.95 0 0); /* Light gray for inputs */
+  --ring: oklch(0.65 0.2 270); /* Violet for focus rings */
+  --chart-1: oklch(0.646 0.222 41.116);
+  --chart-2: oklch(0.6 0.118 184.704);
+  --chart-3: oklch(0.398 0.07 227.392);
+  --chart-4: oklch(0.828 0.189 84.429);
+  --chart-5: oklch(0.769 0.188 70.08);
+  --radius: 0.5rem; /* Softer rounded corners */
+  --sidebar: oklch(0 0 0); /* Black sidebar */
+  --sidebar-foreground: oklch(1 0 0); /* White sidebar text */
+  --sidebar-primary: oklch(0.65 0 0); /* Violet for primary sidebar */
+  --sidebar-primary-foreground: oklch(1 0 0); /* White text on sidebar primary */
+  --sidebar-accent: oklch(0.95 0 0); /* Light gray for sidebar accent */
+  --sidebar-accent-foreground: oklch(0 0 0); /* Black text on sidebar accent */
+  --sidebar-border: oklch(1 0 0); /* White sidebar borders */
+  --sidebar-ring: oklch(0.65 0.2 270); /* Violet for sidebar focus */
+  --font-instrument-serif: "Instrument Serif", serif; /* Instrument Serif font family configuration */
+  /* Added Figtree as the primary font variable */
+  --font-figtree: "Figtree", sans-serif; /* Figtree font family configuration */
+}
+
+.dark {
+  /* Dark mode maintains the same dramatic black background theme */
+  --background: #000000;
+  --foreground: oklch(1 0 0);
+  --card: oklch(0.1 0 0);
+  --card-foreground: oklch(1 0 0);
+  --popover: oklch(0.1 0 0);
+  --popover-foreground: oklch(1 0 0);
+  --primary: oklch(0.7 0.25 270);
+  --primary-foreground: oklch(0 0 0);
+  --secondary: oklch(0.15 0 0);
+  --secondary-foreground: oklch(1 0 0);
+  --muted: oklch(0.15 0 0);
+  --muted-foreground: oklch(0.7 0 0);
+  --accent: oklch(0.7 0.25 270);
+  --accent-foreground: oklch(0 0 0);
+  --destructive: oklch(0.5 0 0.4);
+  --destructive-foreground: oklch(1 0 0);
+  --border: oklch(0.3 0 0);
+  --input: oklch(0.15 0 0);
+  --ring: oklch(0.7 0.25 270);
+  --chart-1: oklch(0.488 0.243 264.376);
+  --chart-2: oklch(0.696 0.17 162.48);
+  --chart-3: oklch(0.769 0.188 70.08);
+  --chart-4: oklch(0.627 0.265 303.9);
+  --chart-5: oklch(0.645 0.246 16.439);
+  --sidebar: oklch(0.05 0 0);
+  --sidebar-foreground: oklch(1 0 0);
+  --sidebar-primary: oklch(0.7 0.25 270);
+  --sidebar-primary-foreground: oklch(0 0 0);
+  --sidebar-accent: oklch(0.15 0 0);
+  --sidebar-accent-foreground: oklch(1 0 0);
+  --sidebar-border: oklch(0.3 0 0);
+  --sidebar-ring: oklch(0.7 0.25 270);
+  --font-instrument-serif: "Instrument Serif", serif; /* Instrument Serif font family configuration */
+  /* Added Figtree font variable for dark mode consistency */
+  --font-figtree: "Figtree", sans-serif; /* Figtree font family configuration */
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --font-instrument-serif: var(--font-instrument-serif);
+  /* Added Figtree font to theme configuration */
+  --font-sans: var(--font-figtree);
+  --font-figtree: var(--font-figtree);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+    /* Set Figtree as the default font family for the entire website */
+    font-family: var(--font-figtree);
+  }
+
+  /* Enhanced responsive utilities and mobile optimizations */
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* Mobile-first responsive typography */
+  @media (max-width: 640px) {
+    html {
+      font-size: 14px;
+    }
+  }
+
+  @media (min-width: 641px) and (max-width: 1024px) {
+    html {
+      font-size: 15px;
+    }
+  }
+
+  @media (min-width: 1025px) {
+    html {
+      font-size: 16px;
+    }
+  }
+
+  /* Accessibility improvements */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+
+  /* High contrast mode support */
+  @media (prefers-contrast: high) {
+    .backdrop-blur-md {
+      backdrop-filter: none;
+      background-color: rgba(0, 0, 0, 0.9) !important;
+    }
+
+    .bg-white\/15,
+    .bg-white\/20,
+    .bg-white\/10 {
+      background-color: rgba(255, 255, 255, 0.95) !important;
+      color: #000 !important;
+    }
+  }
+
+  /* Focus visible improvements */
+  *:focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+  }
+
+  /* Touch target improvements for mobile */
+  button,
+  [role="button"],
+  input[type="submit"],
+  input[type="button"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Improved text selection */
+  ::selection {
+    background-color: hsl(var(--primary) / 0.3);
+    color: hsl(var(--primary-foreground));
+  }
+}
+
+@layer components {
+  /* Mobile-specific layout utilities */
+  .mobile-layout {
+    --container-padding: 1rem;
+    --card-padding: 1rem;
+    --text-scale: 0.9;
+  }
+
+  .tablet-layout {
+    --container-padding: 1.5rem;
+    --card-padding: 1.5rem;
+    --text-scale: 0.95;
+  }
+
+  /* Glassmorphism utilities with better mobile performance */
+  .glass-card {
+    @apply backdrop-blur-md bg-white/15 border border-white/30;
+  }
+
+  .glass-card-hover {
+    @apply hover:bg-white/20 transition-all duration-200;
+  }
+
+  /* Mobile-optimized animations */
+  @media (max-width: 768px) {
+    .animate-pulse,
+    .animate-spin,
+    .animate-bounce {
+      animation-duration: 1.5s;
+    }
+  }
+
+  /* Print styles */
+  @media print {
+    .no-print {
+      display: none !important;
+    }
+
+    .glass-card {
+      background: white !important;
+      border: 1px solid #ccc !important;
+      backdrop-filter: none !important;
+    }
+
+    body {
+      background: white !important;
+      color: black !important;
+    }
+  }
+}
+
+@layer utilities {
+  /* Custom utility classes for legal system */
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .text-pretty {
+    text-wrap: pretty;
+  }
+
+  /* Safe area utilities for mobile devices */
+  .safe-top {
+    padding-top: env(safe-area-inset-top);
+  }
+
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .safe-left {
+    padding-left: env(safe-area-inset-left);
+  }
+
+  .safe-right {
+    padding-right: env(safe-area-inset-right);
+  }
+
+  /* Loading states */
+  .loading-skeleton {
+    @apply animate-pulse bg-gray-300/20 rounded;
+  }
+
+  /* Voice recording animation */
+  .voice-pulse {
+    animation: voice-pulse 1.5s ease-in-out infinite;
+  }
+
+  @keyframes voice-pulse {
+    0%,
+    100% {
+      transform: scale(1);
+      opacity: 1;
+    }
+    50% {
+      transform: scale(1.05);
+      opacity: 0.8;
+    }
+  }
+
+  /* Legal document styling */
+  .legal-content {
+    @apply max-w-none;
+  }
+
+  .legal-content h1 {
+    @apply text-2xl font-bold text-white mb-4;
+  }
+
+  .legal-content h2 {
+    @apply text-xl font-semibold text-white mb-3 mt-6;
+  }
+
+  .legal-content p {
+    @apply text-gray-200 mb-4 leading-relaxed;
+  }
+
+  .legal-content ul {
+    @apply list-disc list-inside text-gray-200 mb-4 space-y-1;
+  }
+
+  .legal-content strong {
+    @apply text-white font-semibold;
+  }
+
+  /* Responsive container utilities */
+  .container-responsive {
+    @apply container mx-auto px-4 sm:px-6 lg:px-8;
+  }
+
+  /* Mobile-first grid utilities */
+  .grid-responsive {
+    @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6;
+  }
+}
+
+.instrument {
+  font-family: var(--font-instrument-serif);
+}
+
+/* PWA and offline styles */
+.pwa-install-banner {
+  @apply fixed bottom-4 left-4 right-4 md:left-auto md:right-4 md:w-80 z-50;
+  /* Replaced glass-card @apply with direct CSS properties to fix utility class error */
+  backdrop-filter: blur(8px);
+  background-color: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  animation: slide-in-from-bottom-full 0.3s ease-in-out forwards;
+}
+
+.offline-indicator {
+  @apply fixed top-4 left-1/2 transform -translate-x-1/2 z-50;
+  @apply backdrop-blur-md border animate-in slide-in-from-top-full;
+}
+
+/* Screen reader only utility */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.sr-only:focus,
+.sr-only:active {
+  position: static;
+  width: auto;
+  height: auto;
+  padding: inherit;
+  margin: inherit;
+  overflow: visible;
+  clip: auto;
+  white-space: normal;
+}
+
+/* Custom animations for sidebar */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.2s ease-out;
+}
+
+.animate-scaleIn {
+  animation: scaleIn 0.3s ease-out;
+}
