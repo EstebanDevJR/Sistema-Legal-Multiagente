@@ -31,16 +31,6 @@ Sistema inteligente de consultas legales especializado en derecho colombiano, co
 └─────────────────┘    └─────────────────┘    └─────────────────┘
 ```
 
-## 🚀 Deploy Rápido
-
-### ⚡ **¿Quieres deployar en 5 minutos?**
-
-**[📖 Guía de Inicio Rápido](docs/QUICK_START.md)** - Deploy completo paso a paso
-
-### 🎯 **Demo en Vivo**
-- **Frontend:** [https://legal-agent.vercel.app](https://legal-agent.vercel.app)
-- **API Docs:** [https://legal-agent-api.onrender.com/docs](https://legal-agent-api.onrender.com)
-
 ## 🎯 Áreas Legales Soportadas
 
 ### 🏛️ Derecho Civil
@@ -105,7 +95,7 @@ Sistema inteligente de consultas legales especializado en derecho colombiano, co
 ### Prerrequisitos
 - Python 3.9+
 - Node.js 18+
-- API Keys (ver [Variables de Entorno](ENVIRONMENT_VARIABLES_GUIDE.md))
+- API Keys (ver [Variables de Entorno](docs/ENVIRONMENT_VARIABLES_GUIDE.md))
 
 ### Setup Rápido
 
@@ -205,7 +195,7 @@ Este proyecto está bajo la Licencia MIT. Ver [LICENSE](LICENSE) para más detal
 ## 🆘 Soporte
 
 ### Problemas Comunes
-- **Error de API Keys**: Ver [Variables de Entorno](ENVIRONMENT_VARIABLES_GUIDE.md)
+- **Error de API Keys**: Ver [Variables de Entorno](docs/ENVIRONMENT_VARIABLES_GUIDE.md)
 - **Deploy fallido**: Ver [Troubleshooting](docs/TROUBLESHOOTING.md)
 - **CORS errors**: Verificar variables de entorno
 
