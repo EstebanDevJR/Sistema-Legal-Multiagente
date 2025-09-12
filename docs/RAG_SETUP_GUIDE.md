@@ -1,8 +1,8 @@
-# 🗄️ Guía de Configuración RAG con Pinecone
+# 🗄️ Guía de Configuración RAG - Desarrollo Local
 
-## 🎯 Configuración Recomendada: Crear tu Propio RAG
+## 🎯 Configuración RAG para Desarrollo
 
-**Recomendación:** Cada usuario debe crear su propio índice Pinecone con los documentos legales colombianos. Esto garantiza independencia y control total.
+Esta guía te ayudará a configurar el sistema RAG (Retrieval Augmented Generation) para desarrollo local.
 
 ---
 

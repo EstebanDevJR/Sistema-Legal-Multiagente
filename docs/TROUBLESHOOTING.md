@@ -1,367 +1,250 @@
-# 🆘 Guía de Troubleshooting - Sistema Legal Multiagente
+# 🆘 Guía de Troubleshooting - Desarrollo Local
 
 ## 🚨 Problemas Comunes y Soluciones
 
-### 🔧 **Problemas de Deployment**
+### 🔧 **Problemas de Instalación**
 
-#### ❌ **"Build failed" en Render**
+#### ❌ **Error de dependencias Python**
 
 **Síntomas:**
-- Build falla durante `pip install -e .`
-- Error de dependencias no encontradas
+- Error durante `pip install -e .`
+- Dependencias no encontradas
+- Conflictos de versiones
 
 **Soluciones:**
 ```bash
-# 1. Verificar pyproject.toml
-cat backend/pyproject.toml
+# 1. Limpiar cache de pip
+pip cache purge
 
-# 2. Verificar que todas las dependencias estén listadas
-# 3. Probar build localmente
+# 2. Reinstalar dependencias
 cd backend
-pip install -e .
+pip install -e . --force-reinstall
 
-# 4. Si falla, actualizar dependencias
+# 3. Si falla, actualizar herramientas
 pip install --upgrade pip setuptools wheel
 ```
 
-**Causas comunes:**
-- Dependencias conflictivas
-- Versiones de Python incompatibles
-- Archivos corruptos en cache
-
----
-
-#### ❌ **"Cold start lento" en Render**
+#### ❌ **Error de dependencias Node.js**
 
 **Síntomas:**
-- Primera request toma 30+ segundos
+- Error durante `npm install`
+- Módulos no encontrados
+- Conflictos de versiones
+
+**Soluciones:**
+```bash
+# 1. Limpiar cache de npm
+npm cache clean --force
+
+# 2. Eliminar node_modules y reinstalar
+cd frontend
+rm -rf node_modules package-lock.json
+npm install
+
+# 3. Si falla, actualizar npm
+npm install -g npm@latest
+```
+
+### 🗄️ **Problemas de Base de Datos**
+
+#### ❌ **Error de conexión a PostgreSQL**
+
+**Síntomas:**
+- `psycopg2.OperationalError`
+- `connection refused`
+- Base de datos no encontrada
+
+**Soluciones:**
+```bash
+# 1. Verificar que PostgreSQL esté ejecutándose
+# En macOS con Homebrew:
+brew services start postgresql
+
+# En Ubuntu/Debian:
+sudo systemctl start postgresql
+
+# En Windows: Iniciar desde Services
+
+# 2. Verificar conexión
+psql -h localhost -U tu_usuario -d legal_db
+
+# 3. Crear base de datos si no existe
+createdb legal_db
+```
+
+#### ❌ **Error de migraciones**
+
+**Síntomas:**
+- Tablas no encontradas
+- Error de esquema
+- Datos corruptos
+
+**Soluciones:**
+```bash
+# 1. Recrear base de datos
+dropdb legal_db
+createdb legal_db
+
+# 2. Ejecutar setup RAG
+cd backend
+python scripts/setup_rag.py
+```
+
+### 🤖 **Problemas de OpenAI**
+
+#### ❌ **Error de API Key**
+
+**Síntomas:**
+- `Invalid API key`
+- `Authentication failed`
+- `Rate limit exceeded`
+
+**Soluciones:**
+```bash
+# 1. Verificar API key en .env
+cat backend/.env | grep OPENAI_API_KEY
+
+# 2. Verificar que la key sea válida
+# Visita: https://platform.openai.com/api-keys
+
+# 3. Verificar créditos disponibles
+# Visita: https://platform.openai.com/usage
+```
+
+#### ❌ **Error de modelos**
+
+**Síntomas:**
+- `Model not found`
+- `Model not available`
 - Timeout en requests
 
 **Soluciones:**
 ```bash
-# 1. Upgrade a plan Starter ($7/mes)
-# 2. Implementar keep-alive
-# 3. Optimizar imports
+# 1. Verificar que el modelo esté disponible
+# Visita: https://platform.openai.com/docs/models
+
+# 2. Cambiar a un modelo alternativo
+# En .env: EMBEDDING_MODEL=text-embedding-3-small
 ```
 
-**Configuración keep-alive:**
-```python
-# En main.py
-@app.middleware("http")
-async def keep_alive(request: Request, call_next):
-    response = await call_next(request)
-    response.headers["Keep-Alive"] = "timeout=5, max=1000"
-    return response
-```
+### 🎨 **Problemas de Frontend**
 
----
-
-#### ❌ **"CORS error" en frontend**
+#### ❌ **Error 404 en localhost:3000**
 
 **Síntomas:**
-- Error en browser: "CORS policy"
-- Frontend no puede conectar con backend
+- Página no carga
+- Error de conexión
+- API no responde
 
 **Soluciones:**
 ```bash
-# 1. Verificar ALLOWED_ORIGINS en backend
-# En Render: Environment Variables
-ALLOWED_ORIGINS=https://tu-frontend.vercel.app,http://localhost:3000
+# 1. Verificar que el backend esté ejecutándose
+curl http://localhost:8000/health
 
-# 2. Verificar NEXT_PUBLIC_API_URL en frontend
-# En Vercel: Environment Variables
-NEXT_PUBLIC_API_URL=https://tu-backend.onrender.com
+# 2. Verificar variables de entorno
+cat frontend/.env.local
+
+# 3. Reiniciar ambos servicios
+# Backend: uvicorn src.app.main:app --reload --port 8000
+# Frontend: npm run dev
 ```
 
-**Verificación:**
-```bash
-# Test CORS
-curl -H "Origin: https://tu-frontend.vercel.app" \
-  -H "Access-Control-Request-Method: POST" \
-  -H "Access-Control-Request-Headers: X-Requested-With" \
-  -X OPTIONS \
-  https://tu-backend.onrender.com/rag/query
-```
-
----
-
-### 🔑 **Problemas de API Keys**
-
-#### ❌ **"Invalid API Key" - OpenAI**
+#### ❌ **Error de CORS**
 
 **Síntomas:**
-- Error 401 en requests a OpenAI
-- "Invalid API key" en logs
+- `CORS policy` en consola
+- Requests bloqueados
+- API no accesible
 
 **Soluciones:**
 ```bash
-# 1. Verificar formato de key
-# Debe empezar con: sk-proj- o sk-
-echo $OPENAI_API_KEY
+# 1. Verificar CORS_ORIGINS en backend/.env
+CORS_ORIGINS=http://localhost:3000
 
-# 2. Verificar en OpenAI Dashboard
-# https://platform.openai.com/api-keys
-
-# 3. Regenerar key si es necesario
-# 4. Verificar billing y créditos
+# 2. Reiniciar backend
+uvicorn src.app.main:app --reload --port 8000
 ```
 
-**Test de API:**
-```bash
-curl -H "Authorization: Bearer $OPENAI_API_KEY" \
-  https://api.openai.com/v1/models
-```
+### 🔍 **Problemas de RAG**
 
----
-
-#### ❌ **"Index not found" - Pinecone**
+#### ❌ **RAG no funciona**
 
 **Síntomas:**
-- Error al conectar con Pinecone
-- "Index does not exist"
+- No encuentra documentos
+- Respuestas genéricas
+- Error de embeddings
 
 **Soluciones:**
 ```bash
-# 1. Verificar nombre del índice
-echo $PINECONE_INDEX_NAME  # Debe ser: legal-colombia-docs
+# 1. Verificar que los documentos estén en la carpeta correcta
+ls backend/docs/legal/
 
-# 2. Verificar en Pinecone Dashboard
-# https://app.pinecone.io/
+# 2. Ejecutar setup RAG
+cd backend
+python scripts/setup_rag.py
 
-# 3. Crear índice si no existe:
-# - Name: legal-colombia-docs
-# - Dimensions: 1536
-# - Metric: cosine
-# - Environment: us-east-1-aws
+# 3. Verificar base de datos
+python scripts/verify_rag_compatibility.py
 ```
-
-**Test de Pinecone:**
-```bash
-curl -X GET "https://api.pinecone.io/v1/indexes" \
-  -H "Api-Key: $PINECONE_API_KEY"
-```
-
----
-
-#### ❌ **"Voice service unavailable" - ElevenLabs**
-
-**Síntomas:**
-- Error en síntesis de voz
-- "API key invalid"
-
-**Soluciones:**
-```bash
-# 1. Verificar key de ElevenLabs
-echo $ELEVENLABS_API_KEY
-
-# 2. Verificar en ElevenLabs Dashboard
-# https://elevenlabs.io/app/settings/api-keys
-
-# 3. Verificar límites de uso
-# Plan gratuito: 10,000 caracteres/mes
-```
-
-**Test de ElevenLabs:**
-```bash
-curl -X GET "https://api.elevenlabs.io/v1/voices" \
-  -H "xi-api-key: $ELEVENLABS_API_KEY"
-```
-
----
-
-### 🗄️ **Problemas de Base de Datos**
-
-#### ❌ **"Vector search failed"**
-
-**Síntomas:**
-- RAG no encuentra documentos relevantes
-- Respuestas genéricas sin contexto
-
-**Soluciones:**
-```bash
-# 1. Verificar que el índice tenga datos
-# En Pinecone Dashboard, verificar vector count
-
-# 2. Re-indexar documentos
-curl -X POST "https://tu-backend.onrender.com/documents/reindex" \
-  -H "Authorization: Bearer $ADMIN_TOKEN"
-
-# 3. Verificar embeddings
-curl -X POST "https://tu-backend.onrender.com/rag/status"
-```
-
----
 
 ### 🎤 **Problemas de Voz**
 
-#### ❌ **"Audio processing failed"**
+#### ❌ **Audio no se reproduce**
 
 **Síntomas:**
-- Error al procesar audio
-- Speech-to-text no funciona
+- Audio no carga
+- Error de CORS
+- URL duplicada
 
 **Soluciones:**
 ```bash
-# 1. Verificar formato de audio
-# Formatos soportados: WAV, MP3, M4A
-# Tamaño máximo: 25MB
-
-# 2. Verificar OpenAI Whisper
-curl -X POST "https://tu-backend.onrender.com/voice/speech-to-text" \
-  -F "audio_file=@test.wav"
-
-# 3. Verificar logs
-# En Render: View Logs
-```
-
----
-
-### 📱 **Problemas de Frontend**
-
-#### ❌ **"Hydration mismatch"**
-
-**Síntomas:**
-- Error en browser console
-- Componentes no se renderizan
-
-**Soluciones:**
-```bash
-# 1. Verificar next.config.mjs
-# Asegurar que suppressHydrationWarning esté configurado
-
-# 2. Limpiar cache
-rm -rf frontend/.next
-npm run build
-
-# 3. Verificar componentes
-# Asegurar que no haya diferencias entre server/client
-```
-
----
-
-#### ❌ **"API calls failing"**
-
-**Síntomas:**
-- Requests fallan en frontend
-- Network errors
-
-**Soluciones:**
-```bash
-# 1. Verificar API client
-# En lib/api-client.ts
+# 1. Verificar que el backend esté ejecutándose
+curl http://localhost:8000/health
 
 # 2. Verificar variables de entorno
-echo $NEXT_PUBLIC_API_URL
+NEXT_PUBLIC_API_BASE_URL=http://localhost:8000
 
-# 3. Test directo de API
-curl https://tu-backend.onrender.com/health
+# 3. Revisar consola del navegador para errores
 ```
 
----
+## 🔍 **Debugging Avanzado**
 
-### 🔍 **Debugging Avanzado**
+### Logs del Backend
 
-#### **Logs en Render**
 ```bash
-# Ver logs en tiempo real
-render logs -s legal-agent-api -f
-
-# Ver logs específicos
-render logs -s legal-agent-api --tail 100
-
-# Filtrar por error
-render logs -s legal-agent-api | grep ERROR
+# Ejecutar con logs detallados
+uvicorn src.app.main:app --reload --log-level debug
 ```
 
-#### **Logs en Vercel**
+### Logs del Frontend
+
 ```bash
-# Ver logs en Vercel Dashboard
-# https://vercel.com/dashboard
-
-# O usar CLI
-vercel logs https://tu-proyecto.vercel.app
+# Ejecutar con logs detallados
+npm run dev -- --inspect
 ```
 
-#### **Health Checks**
+### Verificar Estado del Sistema
+
 ```bash
-# Backend health
-curl https://tu-backend.onrender.com/health
+# 1. Verificar puertos
+lsof -i :8000  # Backend
+lsof -i :3000  # Frontend
 
-# RAG status
-curl https://tu-backend.onrender.com/rag/status
+# 2. Verificar procesos
+ps aux | grep uvicorn
+ps aux | grep next
 
-# Voice status
-curl https://tu-backend.onrender.com/voice/status
-
-# Documents status
-curl https://tu-backend.onrender.com/documents/health
+# 3. Verificar memoria
+free -h  # Linux/macOS
 ```
 
----
+## 📞 **Obtener Ayuda**
 
-### 🧪 **Testing de Componentes**
-
-#### **Test de RAG**
-```bash
-curl -X POST "https://tu-backend.onrender.com/rag/query" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "question": "¿Cómo constituyo una SAS en Colombia?",
-    "use_uploaded_docs": false
-  }'
-```
-
-#### **Test de Voz**
-```bash
-# Speech-to-text
-curl -X POST "https://tu-backend.onrender.com/voice/speech-to-text" \
-  -F "audio_file=@consulta.wav"
-
-# Text-to-speech
-curl -X POST "https://tu-backend.onrender.com/voice/text-to-speech" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "text": "Respuesta legal de prueba",
-    "voice_style": "legal"
-  }'
-```
-
-#### **Test de Documentos**
-```bash
-# Upload
-curl -X POST "https://tu-backend.onrender.com/documents/upload" \
-  -F "file=@documento.pdf" \
-  -F "user_id=test123"
-
-# List
-curl "https://tu-backend.onrender.com/documents/user/test123"
-```
-
----
-
-### 📊 **Monitoreo de Performance**
-
-#### **Métricas Importantes**
-- **Response time:** < 5 segundos para RAG
-- **Memory usage:** < 512MB en Render
-- **Error rate:** < 1%
-- **Uptime:** > 99%
-
-#### **Alertas Recomendadas**
-```bash
-# Configurar en Render
-# - CPU > 80%
-# - Memory > 90%
-# - Response time > 10s
-# - Error rate > 5%
-```
-
----
-
-### 📞 **Contacto de Soporte**
-
-- 📧 **Email:** esteban.ortiz.dev@gmail.com
-
----
-
-**💡 Tip:** Siempre incluye logs, pasos para reproducir y versión del sistema al reportar problemas.
+1. **Revisar logs**: Siempre revisa los logs de error
+2. **Verificar variables**: Asegúrate de que todas las variables de entorno estén configuradas
+3. **Reiniciar servicios**: Muchos problemas se solucionan reiniciando
+4. **Crear issue**: Si nada funciona, crea un issue en GitHub con:
+   - Sistema operativo
+   - Versiones de Python/Node.js
+   - Logs de error completos
+   - Pasos para reproducir el problema
