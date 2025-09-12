@@ -1,9 +1,5 @@
 # 🏛️ Sistema Legal Multiagente Colombia
 
-[![Python](https://img.shields.io/badge/Python-3.9+-green)](https://python.org)
-[![Next.js](https://img.shields.io/badge/Next.js-14+-black)](https://nextjs.org)
-[![License](https://img.shields.io/badge/License-MIT-yellow)](LICENSE)
-
 Sistema inteligente de consultas legales especializado en derecho colombiano, construido con IA multiagente, RAG y servicios de voz.
 
 ## ✨ Características Principales
