@@ -59,29 +59,19 @@ Sistema inteligente de consultas legales especializado en derecho colombiano, co
 - Sanciones fiscales
 - Régimen cambiario
 
-## 🚀 Deploy Rápido
-
-### ⚡ **¿Quieres deployar en 5 minutos?**
-
-**[📖 Guía de Inicio Rápido](docs/QUICK_START.md)** - Deploy completo paso a paso
-
-### 🎯 **Demo en Vivo**
-- **Frontend:** [https://legal-agent.vercel.app](https://legal-agent.vercel.app)
-- **API Docs:** [https://legal-agent-api.onrender.com/docs](https://legal-agent-api.onrender.com)
 
 ## 📋 Requisitos
 
 ### Prerrequisitos
 - Python 3.9+
 - Node.js 18+
-- API Keys (ver [Variables de Entorno](docs/ENVIRONMENT_VARIABLES_GUIDE.md))
+- API Keys
 
 ### Setup Rápido
 
 ```bash
 # 1. Clonar repositorio
-git clone https://github.com/tu-usuario/agentLegal.git
-cd agentLegal
+git clone https://github.com/EstebanDevJR/Sistema-Legal-Multiagente.git
 
 # 2. Configurar backend
 cd backend
@@ -169,17 +159,6 @@ npm test
 Para desplegar en producción, consulta la documentación oficial de:
 - **Frontend**: [Vercel](https://vercel.com/docs) o [Netlify](https://docs.netlify.com/)
 - **Backend**: [Render](https://render.com/docs) o [Railway](https://docs.railway.app/)
-- **Base de Datos**: [Supabase](https://supabase.com/docs) o [Neon](https://neon.tech/docs)
-
-## 🤝 Contribución
-
-1. Fork el repositorio
-2. Crea una rama feature (`git checkout -b feature/nueva-funcionalidad`)
-3. Commit cambios (`git commit -am 'Agregar nueva funcionalidad'`)
-4. Push a la rama (`git push origin feature/nueva-funcionalidad`)
-5. Crear Pull Request
-
-Ver [Guía de Deployment](docs/DEPLOYMENT.md) para más detalles.
 
 ## 📝 Licencia
 
@@ -192,16 +171,6 @@ Este proyecto está bajo la Licencia MIT. Ver [LICENSE](LICENSE) para más detal
 - [Next.js](https://nextjs.org/) - Framework React
 - [OpenAI](https://openai.com/) - Modelos de IA
 
-## 🆘 Soporte
-
-### Problemas Comunes
-- **Error de API Keys**: Ver [Variables de Entorno](docs/ENVIRONMENT_VARIABLES_GUIDE.md)
-- **Deploy fallido**: Ver [Troubleshooting](docs/TROUBLESHOOTING.md)
-- **CORS errors**: Verificar variables de entorno
-
-### Contacto
-- **Issues**: [GitHub Issues](https://github.com/tu-usuario/agentLegal/issues)
-- **Discusiones**: [GitHub Discussions](https://github.com/tu-usuario/agentLegal/discussions)
 
 Si este proyecto te resulta útil, ¡dale una estrella! ⭐
 
