@@ -126,11 +126,38 @@ export function useChatMemory() {
     }
   }, [currentSessionId, createNewSession])
 
-  const updateMessage = useCallback((messageId: string, updates: Partial<ChatMessage>) => {
+  const updateMessage = useCallback(async (messageId: string, updates: Partial<ChatMessage>, sessionId?: string) => {
+    const targetSessionId = sessionId || currentSessionId
+    
+    if (!targetSessionId) {
+      console.error('updateMessage called without sessionId')
+      return
+    }
+
+    // Update locally first for immediate UI feedback
     setCurrentMessages(prev => prev.map(msg => 
       msg.id === messageId ? { ...msg, ...updates } : msg
     ))
-  }, [])
+
+    // Then persist to backend
+    try {
+      // Only send fields that have values
+      const updateData: any = {}
+      if (updates.type !== undefined) updateData.type = updates.type
+      if (updates.content !== undefined) updateData.content = updates.content
+      if (updates.audioUrl !== undefined) updateData.audio_url = updates.audioUrl
+      if (updates.transcription !== undefined) updateData.transcription = updates.transcription
+      if (updates.sources !== undefined) updateData.sources = updates.sources
+      if (updates.confidence !== undefined) updateData.confidence = updates.confidence
+      if (updates.area !== undefined) updateData.area = updates.area
+      
+      await apiClient.updateChatMessage(targetSessionId, messageId, updateData)
+      console.log(`✅ Message ${messageId} updated successfully in backend`)
+    } catch (error) {
+      console.error('❌ Error updating message in backend:', error)
+      // Could implement retry logic or show error to user
+    }
+  }, [currentSessionId])
 
   const switchToSession = useCallback(async (sessionId: string) => {
     // Prevent multiple simultaneous calls

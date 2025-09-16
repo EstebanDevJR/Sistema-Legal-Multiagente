@@ -1,8 +1,15 @@
-"""New LangGraph Agent.
-
-This module defines a custom graph.
+"""
+Módulo del sistema multiagente legal
 """
 
-# from agent.graph import graph
+from .legal_agents import legal_agent_system
+from .types import LegalArea, QueryComplexity, AgentState, AgentResponse, LegalResponse
 
-__all__ = ["graph"]
+__all__ = [
+    'legal_agent_system',
+    'LegalArea',
+    'QueryComplexity', 
+    'AgentState',
+    'AgentResponse',
+    'LegalResponse'
+]

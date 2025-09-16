@@ -7,11 +7,11 @@ class QueryProcessor:
     def __init__(self):
         # Configuraciones optimizadas por tipo de consulta  
         self.query_configs = {
-            "constitución": {"k": 7, "threshold": 0.4, "boost_keywords": ["sas", "empresa", "constituir", "cámara", "comercio"]},
-            "laboral": {"k": 6, "threshold": 0.45, "boost_keywords": ["contrato", "trabajo", "empleado", "prestaciones", "liquidación"]},
-            "tributario": {"k": 8, "threshold": 0.5, "boost_keywords": ["impuesto", "dian", "tributario", "renta", "iva"]},
-            "contractual": {"k": 5, "threshold": 0.4, "boost_keywords": ["contrato", "cláusula", "obligación", "comercial"]},
-            "general": {"k": 5, "threshold": 0.5, "boost_keywords": []}
+            "constitución": {"k": 15, "threshold": 0.25, "boost_keywords": ["sas", "empresa", "constituir", "cámara", "comercio", "sociedad", "registro", "mercantil", "documentos", "requisitos", "pasos"]},
+            "laboral": {"k": 12, "threshold": 0.3, "boost_keywords": ["contrato", "trabajo", "empleado", "prestaciones", "liquidación", "salario", "derechos", "obligaciones"]},
+            "tributario": {"k": 15, "threshold": 0.3, "boost_keywords": ["impuesto", "dian", "tributario", "renta", "iva", "declaración", "régimen", "obligaciones"]},
+            "contractual": {"k": 10, "threshold": 0.25, "boost_keywords": ["contrato", "cláusula", "obligación", "comercial", "acuerdo", "términos", "condiciones"]},
+            "general": {"k": 10, "threshold": 0.3, "boost_keywords": []}
         }
         
         # Palabras clave por categoría
@@ -141,8 +141,8 @@ class QueryProcessor:
         boost_keywords = config["boost_keywords"]
         
         if boost_keywords:
-            # Agregar keywords que no estén ya presentes
-            missing_keywords = [kw for kw in boost_keywords[:2] if kw not in processed]
+            # Agregar más keywords que no estén ya presentes para mejor recuperación
+            missing_keywords = [kw for kw in boost_keywords[:4] if kw not in processed]
             if missing_keywords:
                 processed += " " + " ".join(missing_keywords)
         

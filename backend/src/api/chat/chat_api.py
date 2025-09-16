@@ -41,6 +41,15 @@ class AddMessageRequest(BaseModel):
     confidence: Optional[float] = None
     area: Optional[str] = None
 
+class UpdateMessageRequest(BaseModel):
+    type: Optional[str] = None
+    content: Optional[str] = None
+    audio_url: Optional[str] = None
+    transcription: Optional[str] = None
+    sources: Optional[List[dict]] = None
+    confidence: Optional[float] = None
+    area: Optional[str] = None
+
 # In-memory storage (en producción usarías una base de datos)
 sessions_storage = {}
 messages_storage = {}
@@ -86,14 +95,24 @@ async def get_session_messages(
     user_id: str = Depends(get_current_user_id)
 ):
     """Obtener mensajes de una sesión específica"""
+    print(f"🔍 GET /sessions/{session_id}/messages - User: {user_id}")
+    print(f"📊 Sessions storage keys: {list(sessions_storage.keys())}")
+    print(f"📊 Messages storage keys: {list(messages_storage.keys())}")
+    
     if session_id not in sessions_storage:
+        print(f"❌ Session {session_id} not found in sessions_storage")
         raise HTTPException(status_code=404, detail="Sesión no encontrada")
     
     session = sessions_storage[session_id]
     if session["user_id"] != user_id:
+        print(f"❌ User {user_id} does not have access to session {session_id} (owner: {session['user_id']})")
         raise HTTPException(status_code=403, detail="No tienes acceso a esta sesión")
     
     messages = messages_storage.get(session_id, [])
+    print(f"📨 Found {len(messages)} messages for session {session_id}")
+    for i, msg in enumerate(messages):
+        print(f"  Message {i+1}: {msg['type']} - {msg['content'][:50]}...")
+    
     return [ChatMessage(**msg) for msg in messages]
 
 @router.post("/sessions/{session_id}/messages", response_model=ChatMessage)
@@ -130,6 +149,11 @@ async def add_message(
         messages_storage[session_id] = []
     messages_storage[session_id].append(message)
     
+    print(f"💾 Message added to session {session_id}:")
+    print(f"  Type: {message['type']}")
+    print(f"  Content: {message['content'][:100]}...")
+    print(f"  Total messages in session: {len(messages_storage[session_id])}")
+    
     # Actualizar sesión
     session["message_count"] += 1
     session["updated_at"] = now
@@ -139,6 +163,57 @@ async def add_message(
         session["title"] = request.content[:50] + ("..." if len(request.content) > 50 else "")
     
     return ChatMessage(**message)
+
+@router.put("/sessions/{session_id}/messages/{message_id}", response_model=ChatMessage)
+async def update_message(
+    session_id: str,
+    message_id: str,
+    request: UpdateMessageRequest,
+    user_id: str = Depends(get_current_user_id)
+):
+    """Actualizar un mensaje específico"""
+    if session_id not in sessions_storage:
+        raise HTTPException(status_code=404, detail="Sesión no encontrada")
+    
+    session = sessions_storage[session_id]
+    if session["user_id"] != user_id:
+        raise HTTPException(status_code=403, detail="No tienes acceso a esta sesión")
+    
+    messages = messages_storage.get(session_id, [])
+    message_index = None
+    
+    # Buscar el mensaje por ID
+    for i, msg in enumerate(messages):
+        if msg["id"] == message_id:
+            message_index = i
+            break
+    
+    if message_index is None:
+        raise HTTPException(status_code=404, detail="Mensaje no encontrado")
+    
+    # Actualizar el mensaje solo con campos que no son None
+    updated_message = {**messages[message_index]}
+    
+    if request.type is not None:
+        updated_message["type"] = request.type
+    if request.content is not None:
+        updated_message["content"] = request.content
+    if request.audio_url is not None:
+        updated_message["audio_url"] = request.audio_url
+    if request.transcription is not None:
+        updated_message["transcription"] = request.transcription
+    if request.sources is not None:
+        updated_message["sources"] = request.sources
+    if request.confidence is not None:
+        updated_message["confidence"] = request.confidence
+    if request.area is not None:
+        updated_message["area"] = request.area
+    
+    messages[message_index] = updated_message
+    print(f"✏️ Message {message_id} updated in session {session_id}:")
+    print(f"  New content: {updated_message['content'][:100]}...")
+    
+    return ChatMessage(**updated_message)
 
 @router.delete("/sessions/{session_id}")
 async def delete_session(

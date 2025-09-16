@@ -202,10 +202,12 @@ export default function ChatInterface({ className }: ChatInterfaceProps) {
           
           // Update the temporary message with audio
           if (tempMessage) {
-            updateMessage(tempMessage.id, {
+            console.log("🔄 Updating message with audio response")
+            await updateMessage(tempMessage.id, {
               content: "🔊 Respuesta de audio",
               audioUrl: audioResponse
-            })
+            }, sessionId)
+            console.log("✅ Audio message update completed")
           }
         } catch (error) {
           console.error("Error generating audio:", error)
@@ -213,18 +215,22 @@ export default function ChatInterface({ className }: ChatInterfaceProps) {
           if (tempMessage) {
             // Simulate streaming for fallback text
             await simulateStreaming(response.response)
-            updateMessage(tempMessage.id, {
+            console.log("🔄 Updating fallback message with text response")
+            await updateMessage(tempMessage.id, {
               content: response.response
-            })
+            }, sessionId)
+            console.log("✅ Fallback message update completed")
           }
         }
       } else {
         // For text mode, simulate streaming effect
         if (tempMessage) {
           await simulateStreaming(response.response)
-          updateMessage(tempMessage.id, {
+          console.log("🔄 Updating message with response:", response.response.substring(0, 100))
+          await updateMessage(tempMessage.id, {
             content: response.response
-          })
+          }, sessionId)
+          console.log("✅ Message update completed")
         }
       }
 

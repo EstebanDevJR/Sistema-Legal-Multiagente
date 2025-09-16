@@ -203,6 +203,13 @@ class ApiClient {
     })
   }
 
+  async updateChatMessage(sessionId: string, messageId: string, message: any): Promise<any> {
+    return this.request<any>(`/chat/sessions/${sessionId}/messages/${messageId}`, {
+      method: "PUT",
+      body: JSON.stringify(message),
+    })
+  }
+
   async deleteChatSession(sessionId: string): Promise<{ message: string }> {
     return this.request<{ message: string }>(`/chat/sessions/${sessionId}`, {
       method: "DELETE",

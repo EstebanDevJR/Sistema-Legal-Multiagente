@@ -160,11 +160,11 @@ async def debug_memory(session_id: str) -> Dict[str, Any]:
         from ...agent.legal_agents import legal_agent_system
         
         # Obtener información del sistema de memoria de agentes
-        agent_context = legal_agent_system._get_conversation_context(session_id)
+        agent_context = legal_agent_system.memory_service.get_conversation_context(session_id)
         agent_summary = legal_agent_system.get_conversation_summary(session_id)
         
         # Obtener cache de conversaciones directamente
-        conversation_cache = legal_agent_system.conversation_cache.get(session_id, [])
+        conversation_cache = legal_agent_system.memory_service.conversation_cache.get(session_id, [])
         
         return {
             "session_id": session_id,

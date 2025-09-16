@@ -22,11 +22,11 @@ class VectorManager:
         
         # Configuraciones optimizadas por tipo de consulta
         self.query_configs = {
-            "constitución": {"k": 7, "threshold": 0.4, "boost_keywords": ["sas", "empresa", "constituir", "cámara", "comercio"]},
-            "laboral": {"k": 6, "threshold": 0.45, "boost_keywords": ["contrato", "trabajo", "empleado", "prestaciones", "liquidación"]},
-            "tributario": {"k": 8, "threshold": 0.5, "boost_keywords": ["impuesto", "dian", "tributario", "renta", "iva"]},
-            "contractual": {"k": 5, "threshold": 0.4, "boost_keywords": ["contrato", "cláusula", "obligación", "comercial"]},
-            "general": {"k": 5, "threshold": 0.5, "boost_keywords": []}
+            "constitución": {"k": 15, "threshold": 0.25, "boost_keywords": ["sas", "empresa", "constituir", "cámara", "comercio"]},
+            "laboral": {"k": 12, "threshold": 0.3, "boost_keywords": ["contrato", "trabajo", "empleado", "prestaciones", "liquidación"]},
+            "tributario": {"k": 15, "threshold": 0.3, "boost_keywords": ["impuesto", "dian", "tributario", "renta", "iva"]},
+            "contractual": {"k": 10, "threshold": 0.25, "boost_keywords": ["contrato", "cláusula", "obligación", "comercial"]},
+            "general": {"k": 10, "threshold": 0.3, "boost_keywords": []}
         }
         
         self.initialize_vectorstore()
@@ -254,7 +254,7 @@ class VectorManager:
             
             # Configuración optimizada por categoría
             config = self.query_configs.get(category, self.query_configs["general"])
-            k = min(config["k"], 4)  # Reducir k para mayor velocidad
+            k = config["k"]  # Usar el k completo para mejor recuperación
             threshold = config["threshold"]
             
             # Búsqueda optimizada
@@ -320,17 +320,17 @@ class VectorManager:
                     }
                     sources.append(source_dict)
             
-            # Limitar contexto para velocidad pero permitir más contenido para documentos específicos
+            # Usar más contexto para mejor calidad de respuestas
             if document_ids and len(document_ids) > 0:
                 # Para documentos específicos, usar más contexto
-                context = " ".join(relevant_chunks[:5])  # Hasta 5 chunks para documentos específicos
-                if len(context) > 3000:  # Aumentar límite para documentos específicos
-                    context = context[:3000] + "..."
+                context = " ".join(relevant_chunks[:8])  # Hasta 8 chunks para documentos específicos
+                if len(context) > 5000:  # Aumentar límite para documentos específicos
+                    context = context[:5000] + "..."
             else:
-                # Para búsqueda general, mantener límite más bajo
-                context = " ".join(relevant_chunks[:3])  # Solo primeros 3 chunks
-                if len(context) > 1500:
-                    context = context[:1500] + "..."
+                # Para búsqueda general, usar más contexto también
+                context = " ".join(relevant_chunks[:6])  # Aumentar a 6 chunks
+                if len(context) > 3000:  # Aumentar límite general
+                    context = context[:3000] + "..."
             
             # Si se especificaron documentos específicos pero no se encontraron resultados
             if document_ids and len(document_ids) > 0 and len(relevant_chunks) == 0:
@@ -372,7 +372,7 @@ class VectorManager:
             if document_ids:
                 logger.info(f"📄 Filtered by document_ids: {document_ids}")
             
-            return context, sources[:3]  # Máximo 3 fuentes
+            return context, sources[:5]  # Aumentar a máximo 5 fuentes para más información
             
         except Exception as e:
             print(f"❌ Error en búsqueda vectorial: {e}")

@@ -47,7 +47,7 @@ class RAGService:
             # 0. Obtener contexto de conversación usando únicamente el sistema de agentes
             conversation_context = ""
             if session_id:
-                conversation_context = self.agent_system._get_conversation_context(session_id)
+                conversation_context = self.agent_system.memory_service.get_conversation_context(session_id)
                 print(f"🧠 Session ID: {session_id}")
                 print(f"🧠 Contexto de conversación: {len(conversation_context)} caracteres")
                 print(f"🧠 Contexto preview: {conversation_context[:200]}...")
