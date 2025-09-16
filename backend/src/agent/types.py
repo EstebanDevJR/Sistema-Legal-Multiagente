@@ -68,6 +68,6 @@ class LegalResponse:
 @dataclass
 class ModelConfig:
     """Configuración del modelo de IA"""
-    model: str = "gpt-4o-mini"
-    temperature: float = 0.1
-    max_tokens: int = 1500
+    model: str = "gpt-4o-mini"  # Modelo más rápido
+    temperature: float = 0.1     # Menor temperatura para respuestas más consistentes
+    max_tokens: int = 1000       # Reducido para respuestas más concisas y rápidas

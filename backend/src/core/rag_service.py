@@ -4,11 +4,13 @@ Servicio RAG integrado que combina vectorstore, query processing y agentes
 
 import time
 import logging
+import hashlib
 from typing import Dict, Any, List, Optional, Tuple
 from ..services.legal.rag.vector_manager import VectorManager
 from ..services.legal.rag.query_processor import QueryProcessor
 # Removido: from ..services.memory.chat_memory import chat_memory_service
 from ..agent.legal_agents import legal_agent_system
+from .cache_service import query_cache
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +46,23 @@ class RAGService:
         start_time = time.time()
         
         try:
-            # 0. Obtener contexto de conversación usando únicamente el sistema de agentes
+            # 0. Verificar caché primero
+            context_elements = [
+                str(document_ids) if document_ids else "",
+                str(use_uploaded_docs),
+                user_id
+            ]
+            context_hash = hashlib.md5("|".join(context_elements).encode()).hexdigest()[:8]
+            
+            cached_response = query_cache.get(question, context_hash)
+            if cached_response:
+                processing_time = int((time.time() - start_time) * 1000)
+                cached_response["metadata"]["processing_time_ms"] = processing_time
+                cached_response["metadata"]["from_cache"] = True
+                logger.info(f"⚡ Returned cached response in {processing_time}ms")
+                return cached_response
+            
+            # 1. Obtener contexto de conversación usando únicamente el sistema de agentes
             conversation_context = ""
             if session_id:
                 conversation_context = self.agent_system.memory_service.get_conversation_context(session_id)
@@ -112,7 +130,7 @@ class RAGService:
             # 6. Calcular tiempo de procesamiento
             processing_time = int((time.time() - start_time) * 1000)
             
-            return {
+            response = {
                 "answer": agent_response["answer"],
                 "confidence": agent_response["confidence"],
                 "category": category,
@@ -133,6 +151,12 @@ class RAGService:
                     }
                 }
             }
+            
+            # 7. Guardar en caché si es apropiado
+            if query_cache.should_cache_query(question, response):
+                query_cache.set(question, response, context_hash)
+            
+            return response
             
         except Exception as e:
             print(f"❌ Error en procesamiento RAG: {e}")
@@ -234,6 +258,10 @@ class RAGService:
                 "agent_system": {
                     "status": "operational",
                     "agents": ["coordinator", "civil", "comercial", "laboral", "tributario", "evaluator"]
+                },
+                "cache": {
+                    "status": "operational",
+                    "stats": query_cache.get_stats()
                 }
             },
             "performance": {
