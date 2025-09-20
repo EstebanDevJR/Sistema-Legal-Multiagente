@@ -318,10 +318,22 @@ async def process_voice_query(
         logger.info(f"  - confidence: {stt_result.get('confidence', 'None')}")
         
         if stt_result.get("error") or not stt_result.get("text", "").strip():
-            logger.error(f"❌ STT failed: {stt_result.get('error', 'No text returned')}")
+            error_msg = stt_result.get('error', 'No text returned')
+            logger.error(f"❌ STT failed: {error_msg}")
+            
+            # Proporcionar mensajes más específicos y útiles
+            if "No speech detected" in error_msg:
+                detail = "No se detectó voz en el audio. Por favor, asegúrate de hablar claramente cerca del micrófono."
+            elif "Empty audio" in error_msg or "No text returned" in error_msg:
+                detail = "El audio parece estar vacío o no contener voz. Intenta grabar de nuevo."
+            elif "conversion failed" in error_msg.lower():
+                detail = "Error al procesar el formato de audio. Intenta usar un formato diferente."
+            else:
+                detail = f"Error en la transcripción: {error_msg}"
+            
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="No se pudo transcribir el audio correctamente"
+                detail=detail
             )
         
         transcribed_text = stt_result["text"]

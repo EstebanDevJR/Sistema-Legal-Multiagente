@@ -300,7 +300,7 @@ export default function ChatInterface({ className }: ChatInterfaceProps) {
       updateMessage(userMessage.id, {
         content: transcription || "Consulta por voz",
         transcription: transcription
-      })
+      }, sessionId)
 
       // Simulate streaming and update message
       if (tempMessage) {
@@ -309,13 +309,13 @@ export default function ChatInterface({ className }: ChatInterfaceProps) {
           updateMessage(tempMessage.id, {
             content: "🔊 Respuesta de audio",
             audioUrl: response.audioUrl
-          })
+          }, sessionId)
         } else {
           // For text mode, simulate streaming
           await simulateStreaming(response.response)
           updateMessage(tempMessage.id, {
             content: response.response
-          })
+          }, sessionId)
         }
       }
 
