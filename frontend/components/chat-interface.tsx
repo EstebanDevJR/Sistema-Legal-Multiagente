@@ -15,6 +15,7 @@ import { useDocuments } from "@/contexts/DocumentContext"
 import type { LegalQueryResponse } from "@/lib/api-types"
 import { apiClient } from "@/lib/api-client"
 import EmailConversationModal from "@/components/email-conversation-modal"
+import ReactMarkdown from "react-markdown"
 import { 
   Mic, 
   MicOff, 
@@ -521,16 +522,40 @@ export default function ChatInterface({ className }: ChatInterfaceProps) {
                 <CardContent className="p-4">
                   <div className="space-y-2">
                     <div className="flex items-start justify-between gap-2">
-                      <p className="text-white whitespace-pre-wrap flex-1">
-                        {message.content}
-                        {message.content.includes("Analizando tu consulta") && (
-                          <span className="inline-flex items-center ml-2">
-                            <span className="w-2 h-2 bg-blue-400 rounded-full animate-bounce mr-1"></span>
-                            <span className="w-2 h-2 bg-green-400 rounded-full animate-bounce mr-1" style={{animationDelay: '0.1s'}}></span>
-                            <span className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></span>
-                          </span>
+                      <div className="text-white flex-1 prose prose-invert prose-sm max-w-none">
+                        {message.type === 'assistant' ? (
+                          <ReactMarkdown
+                            components={{
+                              // Personalizar estilos para elementos markdown
+                              h1: ({children}) => <h1 className="text-xl font-bold text-white mb-3 mt-4">{children}</h1>,
+                              h2: ({children}) => <h2 className="text-lg font-semibold text-white mb-2 mt-3">{children}</h2>,
+                              h3: ({children}) => <h3 className="text-base font-medium text-white mb-2 mt-2">{children}</h3>,
+                              p: ({children}) => <p className="text-white mb-2 leading-relaxed">{children}</p>,
+                              ul: ({children}) => <ul className="text-white mb-2 ml-4 list-disc space-y-1">{children}</ul>,
+                              ol: ({children}) => <ol className="text-white mb-2 ml-4 list-decimal space-y-1">{children}</ol>,
+                              li: ({children}) => <li className="text-white">{children}</li>,
+                              strong: ({children}) => <strong className="font-semibold text-white">{children}</strong>,
+                              em: ({children}) => <em className="italic text-white">{children}</em>,
+                              code: ({children}) => <code className="bg-white/10 text-blue-200 px-1 py-0.5 rounded text-sm">{children}</code>,
+                              pre: ({children}) => <pre className="bg-white/10 text-blue-200 p-3 rounded-md overflow-x-auto text-sm mb-2">{children}</pre>,
+                              blockquote: ({children}) => <blockquote className="border-l-4 border-blue-400 pl-4 text-white/90 italic mb-2">{children}</blockquote>,
+                            }}
+                          >
+                            {message.content}
+                          </ReactMarkdown>
+                        ) : (
+                          <p className="text-white whitespace-pre-wrap">
+                            {message.content}
+                            {message.content.includes("Analizando tu consulta") && (
+                              <span className="inline-flex items-center ml-2">
+                                <span className="w-2 h-2 bg-blue-400 rounded-full animate-bounce mr-1"></span>
+                                <span className="w-2 h-2 bg-green-400 rounded-full animate-bounce mr-1" style={{animationDelay: '0.1s'}}></span>
+                                <span className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></span>
+                              </span>
+                            )}
+                          </p>
                         )}
-                      </p>
+                      </div>
                       {message.type === 'assistant' && (
                         <Button
                           onClick={() => copyToClipboard(message.content, message.id)}
@@ -623,10 +648,28 @@ export default function ChatInterface({ className }: ChatInterfaceProps) {
                 <CardContent className="p-4">
                   <div className="space-y-2">
                     <div className="flex items-start justify-between gap-2">
-                      <p className="text-white whitespace-pre-wrap flex-1">
-                        {streamingMessage}
+                      <div className="text-white flex-1 prose prose-invert prose-sm max-w-none">
+                        <ReactMarkdown
+                          components={{
+                            // Personalizar estilos para elementos markdown (mismo que arriba)
+                            h1: ({children}) => <h1 className="text-xl font-bold text-white mb-3 mt-4">{children}</h1>,
+                            h2: ({children}) => <h2 className="text-lg font-semibold text-white mb-2 mt-3">{children}</h2>,
+                            h3: ({children}) => <h3 className="text-base font-medium text-white mb-2 mt-2">{children}</h3>,
+                            p: ({children}) => <p className="text-white mb-2 leading-relaxed inline">{children}</p>,
+                            ul: ({children}) => <ul className="text-white mb-2 ml-4 list-disc space-y-1">{children}</ul>,
+                            ol: ({children}) => <ol className="text-white mb-2 ml-4 list-decimal space-y-1">{children}</ol>,
+                            li: ({children}) => <li className="text-white">{children}</li>,
+                            strong: ({children}) => <strong className="font-semibold text-white">{children}</strong>,
+                            em: ({children}) => <em className="italic text-white">{children}</em>,
+                            code: ({children}) => <code className="bg-white/10 text-blue-200 px-1 py-0.5 rounded text-sm">{children}</code>,
+                            pre: ({children}) => <pre className="bg-white/10 text-blue-200 p-3 rounded-md overflow-x-auto text-sm mb-2">{children}</pre>,
+                            blockquote: ({children}) => <blockquote className="border-l-4 border-blue-400 pl-4 text-white/90 italic mb-2">{children}</blockquote>,
+                          }}
+                        >
+                          {streamingMessage}
+                        </ReactMarkdown>
                         <span className="inline-block w-2 h-5 bg-blue-400 ml-1 animate-pulse"></span>
-                      </p>
+                      </div>
                     </div>
                   </div>
                 </CardContent>

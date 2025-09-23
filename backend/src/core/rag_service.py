@@ -82,22 +82,22 @@ class RAGService:
             
             print(f"🔍 Procesando consulta: {category} ({complexity})")
             
-            # 2. Búsqueda vectorial
+            # 2. Búsqueda vectorial (incluye análisis directo si hay document_ids)
             print(f"🔍 RAG Service - document_ids received: {document_ids}")
             print(f"🔍 RAG Service - document_ids type: {type(document_ids)}")
             print(f"🔍 RAG Service - document_ids length: {len(document_ids) if document_ids else 0}")
             
             if document_ids and len(document_ids) > 0:
-                # Buscar en documentos específicos
-                print(f"📄 Searching in specific documents: {document_ids}")
-                logger.info(f"🔍 RAG Service: Searching in documents {document_ids}")
+                # El vector_manager ahora maneja análisis directo automáticamente
+                print(f"📄 Searching/analyzing documents: {document_ids}")
+                logger.info(f"🔍 RAG Service: Processing documents {document_ids}")
                 context, sources = self.vector_manager.search_vectorstore(
                     processed_question, 
                     category,
                     document_ids=document_ids
                 )
-                print(f"📄 RAG Service - Context from specific docs: {context[:200]}...")
-                print(f"📄 RAG Service - Sources from specific docs: {len(sources)} sources")
+                print(f"📄 RAG Service - Context from documents: {context[:200]}...")
+                print(f"📄 RAG Service - Sources from documents: {len(sources)} sources")
             else:
                 # Búsqueda general
                 print(f"🔍 No specific documents provided, doing general search")
@@ -118,10 +118,6 @@ class RAGService:
                 session_id=session_id,  # Pasar session_id en lugar de conversation_context
                 conversation_context=conversation_context  # Mantener por compatibilidad
             )
-            
-            # 4. Los mensajes ya se guardan automáticamente en el sistema de agentes
-            # No necesitamos guardado manual aquí ya que el sistema de agentes
-            # maneja la memoria internamente en el evaluator_node
             
             # 5. Generar sugerencias relacionadas
             suggestions = self.query_processor.get_related_queries(question, category)

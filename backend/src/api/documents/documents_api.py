@@ -59,21 +59,31 @@ async def upload_document(
         # Restaurar el archivo para el servicio
         await file.seek(0)
         
-        # Validar tipo de contenido básico
-        allowed_mime_prefixes = ("text/", "application/pdf", "image/png", "image/jpeg")
+        # Validar tipo de contenido básico - Ampliado para imágenes
+        allowed_mime_prefixes = (
+            "text/", 
+            "application/pdf", 
+            "image/png", 
+            "image/jpeg", 
+            "image/jpg",
+            "image/tiff",
+            "image/bmp",
+            "image/webp"
+        )
         if file.content_type and not file.content_type.startswith(allowed_mime_prefixes):
             # Permitir por extensión conocida si no hay content_type confiable
-            allowed_ext = [".txt", ".md", ".pdf", ".png", ".jpg", ".jpeg"]
+            allowed_ext = [".txt", ".md", ".pdf", ".png", ".jpg", ".jpeg", ".tiff", ".tif", ".bmp", ".webp"]
             if not any(file.filename.lower().endswith(ext) for ext in allowed_ext):
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="Tipo de archivo no soportado"
+                    detail="Tipo de archivo no soportado. Formatos permitidos: PDF, TXT, MD, PNG, JPG, JPEG, TIFF, BMP, WEBP"
                 )
 
         # Subir documento
         logger.info("📄 Uploading document")
         logger.info(f"  - user_id: {user_id}")
         logger.info(f"  - document_type: {document_type}")
+        
         result = await document_service.upload_document(
             file=file,
             user_id=user_id,
@@ -426,6 +436,30 @@ async def documents_health_check() -> Dict[str, str]:
         logger.error(f"❌ Documents health check failed: {e}")
         return {"status": "unhealthy", "message": str(e)}
 
+@router.get("/extraction-status")
+async def get_extraction_status() -> Dict[str, Any]:
+    """
+    Obtener estado del servicio de extracción de texto
+    """
+    try:
+        from ...services.documents.textract_service import textract_service
+        
+        status = textract_service.get_service_status()
+        
+        return {
+            "status": "operational",
+            "extraction_service": status,
+            "message": "AWS Textract available" if status["textract_available"] else "Using fallback extraction methods"
+        }
+        
+    except Exception as e:
+        logger.error(f"❌ Error getting extraction status: {e}")
+        return {
+            "status": "error",
+            "error": str(e),
+            "message": "Failed to get extraction service status"
+        }
+
 @router.post("/bulk-upload")
 async def bulk_upload_documents(
     files: List[UploadFile] = File(...),
@@ -475,3 +509,183 @@ async def bulk_upload_documents(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Error en carga masiva de documentos"
         )
+
+@router.post("/test-extraction")
+async def test_text_extraction(
+    file: UploadFile = File(...),
+    use_textract: bool = Form(True)
+) -> Dict[str, Any]:
+    """
+    Endpoint de prueba para verificar la extracción de texto
+    """
+    try:
+        if not file.filename:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Archivo requerido"
+            )
+        
+        # Leer contenido
+        content = await file.read()
+        
+        # Importar servicio de extracción
+        from ...services.documents.textract_service import textract_service
+        
+        # Extraer texto
+        extracted_text, metadata = textract_service.extract_text_from_content(
+            content, file.content_type or "application/octet-stream", file.filename
+        )
+        
+        return {
+            "success": True,
+            "filename": file.filename,
+            "content_type": file.content_type,
+            "file_size": len(content),
+            "extracted_text": extracted_text[:1000] + "..." if len(extracted_text) > 1000 else extracted_text,
+            "full_text_length": len(extracted_text),
+            "extraction_metadata": metadata,
+            "message": f"Extracted {len(extracted_text)} characters using {metadata.get('extraction_method', 'unknown')}"
+        }
+        
+    except Exception as e:
+        logger.error(f"❌ Error in test extraction: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error en test de extracción: {str(e)}"
+        )
+
+@router.get("/debug-vector-search/{user_id}")
+async def debug_vector_search(
+    user_id: str, 
+    query: str = "contrato",
+    document_id: Optional[str] = None
+) -> Dict[str, Any]:
+    """
+    Debug endpoint para verificar búsqueda en vector store con filtros
+    """
+    try:
+        from ...services.legal.rag.vector_manager import VectorManager
+        
+        vector_manager = VectorManager()
+        
+        # Obtener documentos del usuario
+        user_docs = document_service.get_user_documents(user_id)
+        
+        if not user_docs:
+            return {
+                "error": "No documents found for user",
+                "user_id": user_id,
+                "user_documents": []
+            }
+        
+        # Usar document_id específico o el primero disponible
+        target_doc_id = document_id or user_docs[0]['id']
+        document_ids = [target_doc_id]
+        
+        logger.info(f"🔍 Debug search for document: {target_doc_id}")
+        
+        # Búsqueda con filtro
+        context, sources = vector_manager.search_vectorstore(
+            question=query,
+            category="general",
+            document_ids=document_ids
+        )
+        
+        # Búsqueda sin filtro para comparar
+        context_no_filter, sources_no_filter = vector_manager.search_vectorstore(
+            question=query,
+            category="general"
+        )
+        
+        return {
+            "success": True,
+            "debug_info": {
+                "user_id": user_id,
+                "query": query,
+                "target_document_id": target_doc_id,
+                "user_documents": [{"id": doc["id"], "filename": doc["filename"]} for doc in user_docs]
+            },
+            "filtered_search": {
+                "context_length": len(context),
+                "sources_count": len(sources),
+                "context_preview": context[:300] + "..." if len(context) > 300 else context,
+                "sources": sources[:2]
+            },
+            "unfiltered_search": {
+                "context_length": len(context_no_filter),
+                "sources_count": len(sources_no_filter),
+                "context_preview": context_no_filter[:300] + "..." if len(context_no_filter) > 300 else context_no_filter,
+                "sources": sources_no_filter[:2]
+            },
+            "comparison": {
+                "filtered_found_content": len(context) > 0,
+                "unfiltered_found_content": len(context_no_filter) > 0,
+                "filter_working": len(sources) > 0 and any(s.get("document_id") == target_doc_id for s in sources)
+            }
+        }
+        
+    except Exception as e:
+        logger.error(f"❌ Error in debug vector search: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error en debug de búsqueda vectorial: {str(e)}"
+        )
+
+@router.get("/cache/stats")
+async def get_cache_stats() -> Dict[str, Any]:
+    """Obtener estadísticas del caché de documentos"""
+    try:
+        cache_stats = document_service.get_cache_stats()
+        storage_stats = document_service.get_storage_stats()
+        
+        return {
+            "success": True,
+            "cache": cache_stats,
+            "storage": storage_stats,
+            "message": f"Cache contains {cache_stats['cached_documents']} documents ({cache_stats['cache_size_mb']:.2f} MB)"
+        }
+        
+    except Exception as e:
+        logger.error(f"❌ Error getting cache stats: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error obteniendo estadísticas de caché: {str(e)}"
+        )
+
+@router.delete("/cache/{document_id}")
+async def clear_document_cache(document_id: str) -> Dict[str, Any]:
+    """Limpiar caché de un documento específico"""
+    try:
+        document_service.clear_document_cache(document_id)
+        
+        return {
+            "success": True,
+            "document_id": document_id,
+            "message": f"Cache cleared for document {document_id}"
+        }
+        
+    except Exception as e:
+        logger.error(f"❌ Error clearing document cache: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error limpiando caché de documento: {str(e)}"
+        )
+
+@router.delete("/cache")
+async def clear_all_cache() -> Dict[str, Any]:
+    """Limpiar todo el caché de documentos"""
+    try:
+        document_service.clear_document_cache()
+        
+        return {
+            "success": True,
+            "message": "All document cache cleared"
+        }
+        
+    except Exception as e:
+        logger.error(f"❌ Error clearing all cache: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error limpiando todo el caché: {str(e)}"
+        )
+

@@ -17,6 +17,7 @@ class S3DocumentService:
         self.bucket_name = os.getenv("AWS_S3_BUCKET_NAME", "legal-agent-docs")
         self.region = os.getenv("AWS_REGION", "us-east-1")
         self.documents_db = {}  # En producción usar una base de datos real
+        self.document_cache = {}  # Caché de documentos procesados {doc_id: {text, metadata, timestamp}}
         
         # Configurar cliente S3
         try:
@@ -137,8 +138,7 @@ class S3DocumentService:
             self.documents_db[user_id].append(document_info)
             
             logger.info(f"✅ Document uploaded: {doc_id} for user {user_id}")
-            # Procesar documento para el vector store
-            await self._process_document_for_vectorstore(document_info, content)
+            logger.info("📄 Document ready for direct analysis - not stored in vector store")
             
             return document_info
             
@@ -189,8 +189,10 @@ class S3DocumentService:
             
             logger.info(f"📁 Document saved locally: {doc_id}")
             
-            # Procesar documento para el vector store
-            await self._process_document_for_vectorstore(document_info, content)
+            # Los documentos de usuario se almacenan solo en S3, no en Pinecone
+            # Pinecone se usa únicamente para la base de conocimiento legal general
+            logger.info("📄 Document stored in S3/local only - ready for direct analysis")
+            logger.info("💡 User documents are analyzed directly, not stored in vector store")
             
             return document_info
             
@@ -198,92 +200,35 @@ class S3DocumentService:
             logger.error(f"❌ Error in local fallback: {e}")
             raise
     
-    async def _process_document_for_vectorstore(self, document_info: Dict[str, Any], content: bytes):
-        """
-        Procesar documento para agregarlo al vector store
-        """
-        try:
-            # Importar aquí para evitar dependencias circulares
-            from ..legal.rag.vector_manager import VectorManager
-            
-            # Crear instancia del vector manager
-            vector_manager = VectorManager()
-            
-            # Extraer texto del contenido
-            logger.info(f"🔄 Extracting text from document {document_info['id']} (type: {document_info.get('content_type', 'unknown')})")
-            text_content = self._extract_text_from_content(content, document_info.get('content_type', ''))
-            logger.info(f"📝 Extracted text length: {len(text_content) if text_content else 0} characters")
-            
-            if text_content:
-                # Agregar al vector store
-                success = await vector_manager.add_document_to_vectorstore(
-                    document_id=document_info['id'],
-                    content=text_content,
-                    filename=document_info['filename'],
-                    user_id=document_info['user_id']
-                )
-                
-                if success:
-                    logger.info(f"✅ Document {document_info['id']} processed for vector store")
-                else:
-                    logger.warning(f"⚠️ Failed to process document {document_info['id']} for vector store")
-            else:
-                logger.warning(f"⚠️ No text content extracted from document {document_info['id']}")
-                
-        except Exception as e:
-            logger.error(f"❌ Error processing document for vector store: {e}")
+    # NOTA: Ya no procesamos documentos para vector store
+    # Los documentos se analizan directamente desde S3 cuando se necesitan
     
-    def _extract_text_from_content(self, content: bytes, content_type: str) -> str:
+    def _extract_text_from_content(self, content: bytes, content_type: str, filename: str = "") -> str:
         """
-        Extraer texto del contenido del archivo
+        Extraer texto del contenido del archivo usando el servicio híbrido
         """
         try:
-            logger.info(f"🔍 Extracting text from content type: {content_type}, size: {len(content)} bytes")
+            # Importar el servicio híbrido
+            from .textract_service import textract_service
             
-            # Para archivos de texto simple
-            if content_type.startswith('text/') or content_type == 'application/octet-stream':
-                text = content.decode('utf-8', errors='ignore')
-                logger.info(f"📄 Extracted text from plain text file: {len(text)} characters")
-                return text
+            logger.info(f"🔍 Using hybrid extraction service for {content_type}, size: {len(content)} bytes")
             
-            # Para PDFs (requiere PyPDF2 o similar)
-            elif content_type == 'application/pdf':
-                try:
-                    import PyPDF2
-                    import io
-                    pdf_reader = PyPDF2.PdfReader(io.BytesIO(content))
-                    text = ""
-                    for page in pdf_reader.pages:
-                        text += page.extract_text() + "\n"
-                    return text
-                except ImportError:
-                    logger.warning("PyPDF2 not available, cannot extract text from PDF")
-                    return ""
+            # Usar el servicio híbrido
+            extracted_text, metadata = textract_service.extract_text_from_content(
+                content, content_type, filename
+            )
             
-            # Para documentos de Word (requiere python-docx)
-            elif content_type in ['application/vnd.openxmlformats-officedocument.wordprocessingml.document', 
-                                'application/msword']:
-                try:
-                    import docx
-                    import io
-                    doc = docx.Document(io.BytesIO(content))
-                    text = ""
-                    for paragraph in doc.paragraphs:
-                        text += paragraph.text + "\n"
-                    return text
-                except ImportError:
-                    logger.warning("python-docx not available, cannot extract text from Word document")
-                    return ""
+            # Log de metadata para debugging
+            logger.info(f"📊 Extraction metadata: method={metadata.get('extraction_method')}, "
+                       f"success={metadata.get('success')}, text_length={len(extracted_text)}")
             
-            # Fallback: intentar decodificar como texto
-            else:
-                logger.info(f"🔄 Using fallback text extraction for content type: {content_type}")
-                text = content.decode('utf-8', errors='ignore')
-                logger.info(f"📄 Fallback extraction result: {len(text)} characters")
-                return text
+            if metadata.get('error'):
+                logger.warning(f"⚠️ Extraction warning: {metadata['error']}")
+            
+            return extracted_text
                 
         except Exception as e:
-            logger.error(f"❌ Error extracting text from content: {e}")
+            logger.error(f"❌ Error in hybrid text extraction: {e}")
             return ""
     
     def get_user_documents(self, user_id: str) -> List[Dict[str, Any]]:
@@ -363,6 +308,45 @@ class S3DocumentService:
             "s3_enabled": self.s3_client is not None,
             "bucket_name": self.bucket_name if self.s3_client else None,
             "storage_mode": "s3" if self.s3_client else "local"
+        }
+
+    def cache_document_text(self, doc_id: str, text: str, metadata: Dict[str, Any]) -> None:
+        """Cachear el texto extraído de un documento"""
+        self.document_cache[doc_id] = {
+            'text': text,
+            'metadata': metadata,
+            'timestamp': datetime.now().isoformat(),
+            'text_length': len(text)
+        }
+        logger.info(f"📄 Document {doc_id} cached - {len(text)} characters")
+
+    def get_cached_document_text(self, doc_id: str) -> Optional[Dict[str, Any]]:
+        """Obtener texto cacheado de un documento"""
+        cached = self.document_cache.get(doc_id)
+        if cached:
+            logger.info(f"🚀 Using cached text for document {doc_id} - {cached['text_length']} characters")
+            return cached
+        return None
+
+    def clear_document_cache(self, doc_id: str = None) -> None:
+        """Limpiar caché de documentos (específico o todo)"""
+        if doc_id:
+            if doc_id in self.document_cache:
+                del self.document_cache[doc_id]
+                logger.info(f"🗑️ Cache cleared for document {doc_id}")
+        else:
+            self.document_cache.clear()
+            logger.info("🗑️ All document cache cleared")
+
+    def get_cache_stats(self) -> Dict[str, Any]:
+        """Obtener estadísticas del caché"""
+        total_docs = len(self.document_cache)
+        total_chars = sum(doc['text_length'] for doc in self.document_cache.values())
+        return {
+            'cached_documents': total_docs,
+            'total_characters': total_chars,
+            'cache_size_mb': total_chars / (1024 * 1024),
+            'documents': list(self.document_cache.keys())
         }
 
 # Instancia global

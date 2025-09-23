@@ -242,6 +242,30 @@ class WorkflowNodes:
             ]
         )(state)
     
+    def constitucional_node(self, state: AgentState) -> AgentState:
+        """Nodo agente constitucional"""
+        return self._create_legal_area_node(
+            "constitucional",
+            "🏛️",
+            [
+                "¿Necesitas información sobre tutelas o derechos fundamentales?",
+                "¿Te interesa conocer sobre acciones constitucionales?",
+                "¿Requieres información sobre jurisprudencia constitucional?"
+            ]
+        )(state)
+    
+    def administrativo_node(self, state: AgentState) -> AgentState:
+        """Nodo agente administrativo"""
+        return self._create_legal_area_node(
+            "administrativo",
+            "🏢",
+            [
+                "¿Necesitas información sobre contratación pública?",
+                "¿Te interesa conocer sobre procedimientos administrativos?",
+                "¿Requieres información sobre recursos administrativos?"
+            ]
+        )(state)
+    
     def evaluator_node(self, state: AgentState) -> AgentState:
         """Nodo evaluador"""
         try:

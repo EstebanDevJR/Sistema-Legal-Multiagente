@@ -20,7 +20,7 @@ export default function DocumentUploader({
   isUploading,
   uploadProgress,
   maxFileSize = 10 * 1024 * 1024, // 10MB
-  acceptedTypes = [".pdf", ".doc", ".docx", ".txt"],
+  acceptedTypes = [".pdf", ".doc", ".docx", ".txt", ".png", ".jpg", ".jpeg", ".tiff", ".bmp", ".webp"],
   className,
 }: DocumentUploaderProps) {
   const [isDragOver, setIsDragOver] = useState(false)
@@ -150,7 +150,7 @@ export default function DocumentUploader({
           name="document-upload"
           type="file"
           multiple
-          accept={acceptedTypes.join(",")}
+          accept={acceptedTypes.join(",") + ",image/*"}
           onChange={handleFileSelect}
           className="hidden"
           aria-label="Subir documentos legales"
@@ -174,8 +174,11 @@ export default function DocumentUploader({
           {isDragOver ? "Suelta los archivos aquí" : "Arrastra documentos aquí o haz clic para seleccionar"}
         </p>
 
-        <p className="text-sm text-white/90 mb-4">
+        <p className="text-sm text-white/90 mb-2">
           Soportamos {acceptedTypes.join(", ")} hasta {formatFileSize(maxFileSize)}
+        </p>
+        <p className="text-xs text-blue-300/80 mb-4">
+          📸 ¡Ahora también puedes subir fotos de documentos! El sistema extraerá automáticamente el texto usando AWS Textract.
         </p>
 
         <Button

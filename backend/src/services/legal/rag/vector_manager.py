@@ -109,62 +109,153 @@ class VectorManager:
         
         return final_score
     
-    async def add_document_to_vectorstore(self, document_id: str, content: str, filename: str, user_id: str) -> bool:
+    def _analyze_documents_directly(self, document_ids: List[str], question: str) -> Tuple[str, List[Dict[str, Any]]]:
         """
-        Agregar un documento al vector store para búsquedas
-        
-        Args:
-            document_id: ID único del documento
-            content: Contenido del documento
-            filename: Nombre del archivo
-            user_id: ID del usuario
-            
-        Returns:
-            True si se agregó exitosamente, False en caso contrario
+        Analizar documentos directamente desde S3 sin usar vector store
         """
-        if not self.vectorstore:
-            logger.warning("Vector store not initialized, cannot add document")
-            return False
-        
         try:
-            # Dividir el contenido en chunks inteligentes que respeten la estructura del documento
-            chunks = self._intelligent_chunking(content)
+            # Import services needed
+            from ...documents.document_service import document_service
+            from ...documents.textract_service import textract_service
             
-            # Crear documentos para el vector store usando Document de LangChain
-            from langchain_core.documents import Document
+            context_parts = []
+            sources = []
             
-            documents = []
-            for i, chunk in enumerate(chunks):
-                doc = Document(
-                    page_content=chunk,
-                    metadata={
-                        "document_id": document_id,
-                        "id": document_id,  # Para compatibilidad con el filtrado
-                        "filename": filename,
-                        "user_id": user_id,
-                        "chunk_index": i,
-                        "total_chunks": len(chunks),
-                        "source": "user_upload"
-                    }
-                )
-                documents.append(doc)
+            logger.info(f"🔍 Direct analysis of {len(document_ids)} documents")
             
-            # Agregar al vector store
-            logger.info(f"🔄 Adding {len(documents)} document chunks to vector store...")
-            self.vectorstore.add_documents(documents)
-            logger.info(f"✅ Document {document_id} added to vector store with {len(chunks)} chunks")
+            for doc_id in document_ids:
+                try:
+                    # Buscar el documento en todos los usuarios (simplificado para el ejemplo)
+                    # En producción deberías pasar el user_id
+                    document_info = None
+                    content = None
+                    
+                    # Buscar en todos los usuarios (temporal)
+                    for user_id, user_docs in document_service.documents_db.items():
+                        for doc in user_docs:
+                            if doc.get('id') == doc_id:
+                                document_info = doc
+                                # Descargar contenido
+                                if document_service.s3_client and doc.get('s3_key'):
+                                    # Desde S3
+                                    response = document_service.s3_client.get_object(
+                                        Bucket=document_service.bucket_name,
+                                        Key=doc['s3_key']
+                                    )
+                                    content = response['Body'].read()
+                                elif doc.get('local_path'):
+                                    # Desde archivo local
+                                    with open(doc['local_path'], 'rb') as f:
+                                        content = f.read()
+                                break
+                        if document_info:
+                            break
+                    
+                    if not document_info:
+                        logger.warning(f"⚠️ Document {doc_id} not found")
+                        continue
+                    
+                    # Verificar si ya tenemos el texto en caché
+                    cached_data = document_service.get_cached_document_text(doc_id)
+                    if cached_data:
+                        extracted_text = cached_data['text']
+                        extraction_metadata = cached_data['metadata']
+                        logger.info(f"🚀 Using cached text for document {doc_id}")
+                    else:
+                        # No está en caché, necesitamos extraer el texto
+                        if not content:
+                            logger.warning(f"⚠️ Document {doc_id} has no content available")
+                            continue
+                        
+                        extracted_text, extraction_metadata = textract_service.extract_text_from_content(
+                            content=content,
+                            content_type=document_info.get('content_type', 'application/octet-stream'),
+                            filename=document_info.get('filename', f'document_{doc_id}')
+                        )
+                        
+                        # Cachear el texto extraído para futuras consultas
+                        if extracted_text and len(extracted_text.strip()) >= 10:
+                            document_service.cache_document_text(doc_id, extracted_text, extraction_metadata)
+                    
+                    if not extracted_text or len(extracted_text.strip()) < 10:
+                        logger.warning(f"⚠️ No text extracted from document {doc_id}")
+                        continue
+                    
+                    # Buscar partes relevantes del texto
+                    relevant_parts = self._extract_relevant_parts(extracted_text, question)
+                    context_parts.extend(relevant_parts)
+                    
+                    # Agregar como fuente
+                    sources.append({
+                        "title": document_info.get('filename', f'Document {doc_id}'),
+                        "content": extracted_text[:500] + "..." if len(extracted_text) > 500 else extracted_text,
+                        "document_id": doc_id,
+                        "relevance": 0.9,  # Alta relevancia para documentos específicos
+                        "source": "direct_analysis",
+                        "extraction_method": extraction_metadata.get('extraction_method', 'unknown'),
+                        "metadata": {
+                            "file_size": len(content),
+                            "text_length": len(extracted_text),
+                            "content_type": document_info.get('content_type', 'unknown')
+                        }
+                    })
+                    
+                    logger.info(f"✅ Successfully analyzed document {doc_id}")
+                        
+                except Exception as doc_error:
+                    logger.error(f"❌ Error analyzing document {doc_id}: {doc_error}")
+                    continue
             
-            # Verificar que se agregó correctamente
-            test_results = self.vectorstore.similarity_search_with_score(
-                f"document_id:{document_id}", k=1
-            )
-            logger.info(f"🔍 Test search for document {document_id}: {len(test_results)} results")
-            
-            return True
-            
+            # Combinar contexto
+            if context_parts:
+                context = "\n\n".join(context_parts)
+                logger.info(f"📄 Direct analysis found {len(context)} characters of context from {len(sources)} documents")
+                return context, sources
+            else:
+                logger.warning("⚠️ No content found in direct document analysis")
+                return "No se encontró información relevante en los documentos específicos subidos. Verifica que los documentos contengan información relacionada con tu consulta.", []
+                
         except Exception as e:
-            logger.error(f"❌ Error adding document to vector store: {e}")
-            return False
+            logger.error(f"❌ Error in direct document analysis: {e}")
+            return "Error al analizar los documentos específicos.", []
+    
+    def _extract_relevant_parts(self, text: str, question: str) -> List[str]:
+        """
+        Extraer partes del texto que sean relevantes para la pregunta
+        """
+        import re
+        
+        # Palabras clave de la pregunta
+        question_words = set(re.findall(r'\w+', question.lower()))
+        question_words = {word for word in question_words if len(word) > 3}
+        
+        # Dividir texto en párrafos
+        paragraphs = [p.strip() for p in text.split('\n\n') if len(p.strip()) > 50]
+        
+        relevant_parts = []
+        
+        for paragraph in paragraphs:
+            paragraph_lower = paragraph.lower()
+            
+            # Contar palabras clave en el párrafo
+            matches = sum(1 for word in question_words if word in paragraph_lower)
+            
+            # Si el párrafo tiene suficientes palabras clave, incluirlo
+            if matches >= 2 or (len(question_words) <= 2 and matches >= 1):
+                relevant_parts.append(paragraph)
+            
+            # Límite de párrafos para evitar contexto muy largo
+            if len(relevant_parts) >= 5:
+                break
+        
+        # Si no se encontraron párrafos relevantes, tomar los primeros
+        if not relevant_parts:
+            relevant_parts = paragraphs[:3]
+        
+        return relevant_parts
+    
+    # NOTA: Los documentos de usuario ya NO se almacenan en Pinecone
+    # Solo se usa análisis directo desde S3. El vector store es solo para conocimiento legal general.
     
     def _intelligent_chunking(self, content: str) -> List[str]:
         """
@@ -240,9 +331,12 @@ class VectorManager:
         Returns:
             Tupla con contexto y fuentes (cada fuente es un diccionario con title, content, relevance, etc.)
         """
+        # Si se especifican document_ids, hacer análisis directo
+        if document_ids and len(document_ids) > 0:
+            logger.info(f"🔍 Direct document analysis requested for: {document_ids}")
+            return self._analyze_documents_directly(document_ids, question)
+        
         if not self.vectorstore:
-            if document_ids and len(document_ids) > 0:
-                return "No se encontró información en los documentos específicos.", []
             return "Legislación colombiana aplicable.", [{"title": "Legislación Colombiana", "content": "Documentos legales del sistema", "relevance": 1.0, "filename": "legislacion_colombiana", "metadata": {}}]
         
         try:
@@ -286,12 +380,31 @@ class VectorManager:
                 # Filtrar por document_ids si se proporcionan
                 if document_ids and len(document_ids) > 0:
                     metadata = doc.metadata or {}
-                    doc_id = metadata.get('document_id') or metadata.get('id')
+                    
+                    # Intentar múltiples formas de obtener el document_id
+                    doc_id = (
+                        metadata.get('document_id') or 
+                        metadata.get('id') or 
+                        metadata.get('doc_id') or
+                        metadata.get('source_id')
+                    )
+                    
+                    # Debug: mostrar todos los metadatos disponibles si doc_id es None
+                    if doc_id is None:
+                        logger.warning(f"⚠️ No document_id found in metadata. Available keys: {list(metadata.keys())}")
+                        logger.warning(f"⚠️ Metadata content: {metadata}")
+                        # Intentar buscar cualquier UUID-like string en los valores
+                        for key, value in metadata.items():
+                            if isinstance(value, str) and len(value) == 36 and '-' in value:
+                                logger.info(f"🔍 Found potential document_id in {key}: {value}")
+                                doc_id = value
+                                break
+                    
                     print(f"🔍 Checking document {doc_id} against filter {document_ids}")
                     logger.info(f"🔍 Checking document {doc_id} against filter {document_ids}")
                     
                     # Verificar si el documento está en la lista de documentos específicos
-                    if doc_id not in document_ids:
+                    if doc_id is None or doc_id not in document_ids:
                         print(f"⏭️ Skipping document {doc_id} - not in filter list")
                         logger.info(f"⏭️ Skipping document {doc_id} - not in filter list")
                         continue  # Saltar este documento si no está en la lista

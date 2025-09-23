@@ -27,6 +27,8 @@ class LegalAgentGraphBuilder:
         workflow.add_node("comercial", self.workflow_nodes.comercial_node)
         workflow.add_node("laboral", self.workflow_nodes.laboral_node)
         workflow.add_node("tributario", self.workflow_nodes.tributario_node)
+        workflow.add_node("constitucional", self.workflow_nodes.constitucional_node)
+        workflow.add_node("administrativo", self.workflow_nodes.administrativo_node)
         workflow.add_node("evaluator", self.workflow_nodes.evaluator_node)
         
         # Configurar flujo
@@ -42,6 +44,8 @@ class LegalAgentGraphBuilder:
                 "comercial": "comercial", 
                 "laboral": "laboral",
                 "tributario": "tributario",
+                "constitucional": "constitucional",
+                "administrativo": "administrativo",
                 "general": "civil",  # Para casos generales, usar civil
                 "multiple": "civil"  # Para casos complejos, empezar con civil
             }
@@ -53,6 +57,8 @@ class LegalAgentGraphBuilder:
         workflow.add_edge("comercial", "evaluator")
         workflow.add_edge("laboral", "evaluator")
         workflow.add_edge("tributario", "evaluator")
+        workflow.add_edge("constitucional", "evaluator")
+        workflow.add_edge("administrativo", "evaluator")
         
         # El evaluador termina el flujo
         workflow.add_edge("evaluator", END)
@@ -74,6 +80,8 @@ class LegalAgentGraphBuilder:
             "comercial": "comercial", 
             "laboral": "laboral",
             "tributario": "tributario",
+            "constitucional": "constitucional",
+            "administrativo": "administrativo",
             "general": "civil"  # Para casos generales, usar civil
         }
         

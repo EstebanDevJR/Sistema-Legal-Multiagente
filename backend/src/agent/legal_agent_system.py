@@ -67,6 +67,8 @@ class LegalAgentSystem:
             "comercial": self.agent_factory.create_comercial_agent(),
             "laboral": self.agent_factory.create_laboral_agent(),
             "tributario": self.agent_factory.create_tributario_agent(),
+            "constitucional": self.agent_factory.create_constitucional_agent(),
+            "administrativo": self.agent_factory.create_administrativo_agent(),
             "evaluator": self.agent_factory.create_evaluator_agent()
         }
     
