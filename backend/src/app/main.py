@@ -121,14 +121,27 @@ if os.getenv("ENVIRONMENT") == "production":
         "https://sistema-legal-multiagente-*.vercel.app"  # Permitir deployments de preview
     ])
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=allowed_origins,
-    allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allow_headers=["Authorization", "Content-Type", "Accept", "Origin", "User-Agent", "X-Requested-With"],
-    max_age=600,
-)
+# Configurar CORS con regex para Vercel
+if os.getenv("ENVIRONMENT") == "production":
+    # En producción, usar regex para permitir todos los subdominios de Vercel
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origin_regex=r"https://.*\.vercel\.app",
+        allow_credentials=True,
+        allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        allow_headers=["Authorization", "Content-Type", "Accept", "Origin", "User-Agent", "X-Requested-With"],
+        max_age=600,
+    )
+else:
+    # En desarrollo, usar lista específica
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=allowed_origins,
+        allow_credentials=True,
+        allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        allow_headers=["Authorization", "Content-Type", "Accept", "Origin", "User-Agent", "X-Requested-With"],
+        max_age=600,
+    )
 
 # Middleware de seguridad - Configuración para Render
 trusted_hosts_env = os.getenv("TRUSTED_HOSTS")
