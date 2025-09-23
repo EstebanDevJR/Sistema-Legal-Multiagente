@@ -52,8 +52,42 @@ class WorkflowNodes:
                 "conversation_context": conversation_context
             })
             
-            # Parsear respuesta JSON
-            coordination = json.loads(response.content)
+            # Parsear respuesta JSON con manejo de errores mejorado
+            if not response.content or not response.content.strip():
+                logger.warning("⚠️ Respuesta vacía del coordinador, usando fallback")
+                coordination = {
+                    "legal_area": "civil",
+                    "complexity": "medium", 
+                    "requires_multiple_areas": False,
+                    "secondary_areas": [],
+                    "reasoning": "Respuesta vacía de OpenAI, usando configuración por defecto",
+                    "relates_to_previous": False
+                }
+            else:
+                try:
+                    coordination = json.loads(response.content)
+                except json.JSONDecodeError as json_error:
+                    logger.warning(f"⚠️ Error JSON en coordinador: {json_error}")
+                    logger.warning(f"📝 Contenido recibido: '{response.content[:200]}...'")
+                    # Intentar extraer información básica del texto
+                    content = response.content.lower()
+                    if "comercial" in content:
+                        area = "comercial"
+                    elif "laboral" in content:
+                        area = "laboral"
+                    elif "tributario" in content:
+                        area = "tributario"
+                    else:
+                        area = "civil"
+                    
+                    coordination = {
+                        "legal_area": area,
+                        "complexity": "medium",
+                        "requires_multiple_areas": False,
+                        "secondary_areas": [],
+                        "reasoning": f"Extraído del texto: {response.content[:100]}",
+                        "relates_to_previous": False
+                    }
             
             state["legal_area"] = coordination["legal_area"]
             state["complexity"] = coordination["complexity"]
@@ -248,8 +282,30 @@ class WorkflowNodes:
                 "has_specific_documents": state.get("has_specific_documents", False)
             })
             
-            # Parsear respuesta JSON
-            evaluation = json.loads(response.content)
+            # Parsear respuesta JSON con manejo de errores mejorado
+            if not response.content or not response.content.strip():
+                logger.warning("⚠️ Respuesta vacía del evaluador, usando fallback")
+                evaluation = {
+                    "final_answer": "Lo siento, hubo un problema técnico al procesar tu consulta. Por favor, intenta de nuevo.",
+                    "confidence": 0.5,
+                    "suggestions": ["Intenta reformular tu pregunta", "Verifica que la consulta sea clara"],
+                    "relates_to_previous": False,
+                    "context_summary": "Error técnico en evaluación"
+                }
+            else:
+                try:
+                    evaluation = json.loads(response.content)
+                except json.JSONDecodeError as json_error:
+                    logger.warning(f"⚠️ Error JSON en evaluador: {json_error}")
+                    logger.warning(f"📝 Contenido recibido: '{response.content[:200]}...'")
+                    # Usar el contenido como respuesta directa si no es JSON válido
+                    evaluation = {
+                        "final_answer": response.content,
+                        "confidence": 0.7,
+                        "suggestions": ["¿Necesitas más detalles sobre este tema?", "¿Hay algo específico que te interese?"],
+                        "relates_to_previous": False,
+                        "context_summary": "Respuesta procesada sin formato JSON"
+                    }
             
             state["final_answer"] = evaluation["final_answer"]
             state["confidence"] = evaluation["confidence"]
