@@ -36,7 +36,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://tu-backend-en-render.onrender.com/:path*"
+      "destination": "https://sistema-legal-multiagente.onrender.com/:path*"
     }
   ]
 }
