@@ -8,7 +8,6 @@ import hashlib
 from typing import Dict, Any, List, Optional, Tuple
 from ..services.legal.rag.vector_manager import VectorManager
 from ..services.legal.rag.query_processor import QueryProcessor
-# Removido: from ..services.memory.chat_memory import chat_memory_service
 from ..agent.legal_agents import legal_agent_system
 from .cache_service import query_cache
 

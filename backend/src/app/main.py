@@ -284,22 +284,26 @@ async def general_exception_handler(request: Request, exc: Exception):
 # Middleware de logging básico
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
-    """Middleware para logging de requests"""
+    """Middleware para logging de requests con manejo mejorado de conexiones"""
     start_time = time.time()
     
-    response = await call_next(request)
-    
-    process_time = time.time() - start_time
-    
-    # Log solo errores para evitar spam, excluyendo health checks
-    if response.status_code >= 400 and request.url.path not in ["/", "/health"]:
-        logger.warning(
-            f"{request.method} {request.url.path} - "
-            f"Status: {response.status_code} - "
-            f"Time: {process_time:.3f}s"
-        )
-    
-    return response
+    try:
+        response = await call_next(request)
+        process_time = time.time() - start_time
+        
+        # Log solo requests importantes (no health checks)
+        if request.url.path not in ["/health", "/"]:
+            logger.info(
+                f"{request.method} {request.url.path} - "
+                f"Status: {response.status_code} - "
+                f"Time: {process_time:.3f}s"
+            )
+        
+        return response
+    except Exception as e:
+        process_time = time.time() - start_time
+        logger.error(f"❌ Request failed: {request.method} {request.url.path} - {str(e)} - Time: {process_time:.3f}s")
+        raise
 
 # Rate limiting básico por IP (en memoria, para despliegues pequeños)
 _rate_limit_store = {}

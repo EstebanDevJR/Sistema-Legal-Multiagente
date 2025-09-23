@@ -35,7 +35,7 @@ export const metadata: Metadata = {
   icons: {
     icon: [
       { url: '/favicon.svg', type: 'image/svg+xml' },
-      { url: '/favicon.ico', sizes: 'any' }
+      { url: '/icon-192.png', sizes: '32x32', type: 'image/png' }
     ],
     other: [
       { rel: 'mask-icon', url: '/safari-pinned-tab.svg', color: '#2563eb' }

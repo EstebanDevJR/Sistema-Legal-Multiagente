@@ -68,16 +68,29 @@ class VoiceService:
     def _check_ffmpeg_availability(self) -> bool:
         """Verificar si ffmpeg está disponible en el sistema"""
         try:
-            result = subprocess.run(['ffmpeg', '-version'], 
-                                  capture_output=True, text=True, timeout=5)
-            if result.returncode == 0:
-                logger.info("✅ FFmpeg is available for audio conversion")
-                return True
-            else:
-                logger.warning("⚠️ FFmpeg not available - audio conversion disabled")
-                return False
-        except (subprocess.TimeoutExpired, FileNotFoundError, Exception) as e:
-            logger.warning(f"⚠️ FFmpeg check failed: {e}")
+            # Intentar con diferentes nombres de comando para Windows
+            ffmpeg_commands = ['ffmpeg', 'ffmpeg.exe', 'where ffmpeg']
+            
+            for cmd in ffmpeg_commands:
+                try:
+                    if cmd == 'where ffmpeg':
+                        # En Windows, usar 'where' para encontrar ffmpeg
+                        result = subprocess.run(['where', 'ffmpeg'], 
+                                              capture_output=True, text=True, timeout=5)
+                    else:
+                        result = subprocess.run([cmd, '-version'], 
+                                              capture_output=True, text=True, timeout=5)
+                    
+                    if result.returncode == 0:
+                        logger.info(f"✅ FFmpeg is available for audio conversion (found via {cmd})")
+                        return True
+                except (subprocess.TimeoutExpired, FileNotFoundError):
+                    continue
+            
+            logger.warning("⚠️ FFmpeg not available - using direct audio upload (still functional)")
+            return False
+        except Exception as e:
+            logger.warning(f"⚠️ FFmpeg check failed: {e} - using direct audio upload")
             return False
     
     def _check_pydub_webm_support(self) -> bool:

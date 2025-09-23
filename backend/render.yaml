@@ -1,0 +1,31 @@
+services:
+  - type: web
+    name: legal-system-backend
+    env: python
+    plan: starter
+    buildCommand: pip install -e .
+    startCommand: uvicorn src.app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.9.18
+      - key: PORT
+        value: 10000
+      - key: ENVIRONMENT
+        value: production
+      - key: ALLOWED_ORIGINS
+        value: https://tu-frontend-en-vercel.vercel.app,http://localhost:3000
+      - key: TRUSTED_HOSTS
+        value: tu-backend-en-render.onrender.com,localhost
+      - key: REQUESTS_PER_MINUTE
+        value: 300
+    # Variables de entorno secretas (configurar en Render Dashboard)
+    # OPENAI_API_KEY
+    # PINECONE_API_KEY  
+    # PINECONE_INDEX_NAME
+    # ELEVENLABS_API_KEY (opcional)
+    # AWS_ACCESS_KEY_ID (opcional)
+    # AWS_SECRET_ACCESS_KEY (opcional)
+    # AWS_REGION (opcional)
+    # AWS_S3_BUCKET (opcional)
+    # LANGSMITH_API_KEY (opcional)
