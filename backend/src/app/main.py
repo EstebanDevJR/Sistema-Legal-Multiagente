@@ -117,14 +117,25 @@ app.add_middleware(
     max_age=600,
 )
 
-# Middleware de seguridad
+# Middleware de seguridad - Configuración para Render
 trusted_hosts_env = os.getenv("TRUSTED_HOSTS")
-trusted_hosts = [h.strip() for h in trusted_hosts_env.split(",") if h.strip()] if trusted_hosts_env else ["localhost", "127.0.0.1"]
+if trusted_hosts_env:
+    trusted_hosts = [h.strip() for h in trusted_hosts_env.split(",") if h.strip()]
+else:
+    # Hosts por defecto para Render y desarrollo
+    trusted_hosts = [
+        "localhost", 
+        "127.0.0.1",
+        "sistema-legal-multiagente.onrender.com",
+        "*.onrender.com"
+    ]
 
-app.add_middleware(
-    TrustedHostMiddleware,
-    allowed_hosts=trusted_hosts
-)
+# Solo aplicar TrustedHostMiddleware en desarrollo
+if os.getenv("ENVIRONMENT") != "production":
+    app.add_middleware(
+        TrustedHostMiddleware,
+        allowed_hosts=trusted_hosts
+    )
 
 # Middleware GZip para compresión
 app.add_middleware(GZipMiddleware, minimum_size=1024)
