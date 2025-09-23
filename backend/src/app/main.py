@@ -105,8 +105,21 @@ allowed_origins_env = os.getenv("ALLOWED_ORIGINS")
 default_allowed = [
     "http://localhost:3000",
     "http://localhost:5173",
+    "https://*.vercel.app",  # Permitir todos los subdominios de Vercel
+    "https://sistema-legal-multiagente.vercel.app",  # URL principal de producción
 ]
-allowed_origins = [o.strip() for o in allowed_origins_env.split(",") if o.strip()] if allowed_origins_env else default_allowed
+
+if allowed_origins_env:
+    allowed_origins = [o.strip() for o in allowed_origins_env.split(",") if o.strip()]
+else:
+    allowed_origins = default_allowed
+
+# En producción, permitir patrones de Vercel
+if os.getenv("ENVIRONMENT") == "production":
+    allowed_origins.extend([
+        "https://*.vercel.app",
+        "https://sistema-legal-multiagente-*.vercel.app"  # Permitir deployments de preview
+    ])
 
 app.add_middleware(
     CORSMiddleware,
