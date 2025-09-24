@@ -32,7 +32,9 @@ import {
   Copy,
   Check,
   Plus,
-  Mail
+  Mail,
+  Eye,
+  EyeOff
 } from "lucide-react"
 
 interface ChatInterfaceProps {
@@ -48,6 +50,7 @@ export default function ChatInterface({ className }: ChatInterfaceProps) {
   const [streamingMessage, setStreamingMessage] = useState<string>("")
   const [isStreaming, setIsStreaming] = useState(false)
   const [lastSubmitTime, setLastSubmitTime] = useState<number>(0)
+  const [showTranscriptions, setShowTranscriptions] = useState<Set<string>>(new Set())
   
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -82,6 +85,18 @@ export default function ChatInterface({ className }: ChatInterfaceProps) {
         variant: "destructive"
       })
     }
+  }
+
+  const toggleTranscription = (messageId: string) => {
+    setShowTranscriptions(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(messageId)) {
+        newSet.delete(messageId)
+      } else {
+        newSet.add(messageId)
+      }
+      return newSet
+    })
   }
 
   const voiceRecorder = useVoiceRecorder()
@@ -216,19 +231,20 @@ export default function ChatInterface({ className }: ChatInterfaceProps) {
       let assistantMessage = tempMessage;
 
       if (responseMode === 'audio' && response.response) {
-        // For audio mode, generate audio first and update message
-        try {
-          const audioResponse = await voiceQuery.generateSpeech(response.response)
-          
-          // Update the temporary message with audio
-          if (tempMessage) {
-            console.log("🔄 Updating message with audio response")
-            await updateMessage(tempMessage.id, {
-              content: "🔊 Respuesta de audio",
-              audioUrl: audioResponse
-            }, sessionId)
-            console.log("✅ Audio message update completed")
-          }
+          // For audio mode, generate audio first and update message
+          try {
+            const audioResponse = await voiceQuery.generateSpeech(response.response)
+            
+            // Update the temporary message with audio
+            if (tempMessage) {
+              console.log("🔄 Updating message with audio response")
+              await updateMessage(tempMessage.id, {
+                content: "🔊 Respuesta de audio",
+                audioUrl: audioResponse,
+                audioTranscription: response.response // Guardar la transcripción
+              }, sessionId)
+              console.log("✅ Audio message update completed")
+            }
         } catch (error) {
           console.error("Error generating audio:", error)
           // Fallback to text if audio generation fails
@@ -328,7 +344,8 @@ export default function ChatInterface({ className }: ChatInterfaceProps) {
           // For audio mode, just update with audio
           updateMessage(tempMessage.id, {
             content: "🔊 Respuesta de audio",
-            audioUrl: response.audioUrl
+            audioUrl: response.audioUrl,
+            audioTranscription: response.response // Guardar la transcripción
           }, sessionId)
         } else {
           // For text mode, simulate streaming
@@ -371,6 +388,20 @@ export default function ChatInterface({ className }: ChatInterfaceProps) {
         description: "Procesando archivos..."
       })
 
+      // Crear sesión si no existe
+      let sessionId = currentSessionId
+      if (!sessionId) {
+        console.log('📝 Creating new session for document upload...')
+        const newSession = await createNewSession()
+        sessionId = newSession?.id || null
+        
+        if (!sessionId) {
+          console.error('❌ Failed to create session for document upload')
+          return
+        }
+        console.log('✅ Session created for document upload:', sessionId)
+      }
+
       // Subir cada archivo al backend
       const uploadPromises = fileArray.map(async (file) => {
         const formData = new FormData()
@@ -391,20 +422,33 @@ export default function ChatInterface({ className }: ChatInterfaceProps) {
         return response.json()
       })
 
-                const results = await Promise.all(uploadPromises)
+      const results = await Promise.all(uploadPromises)
 
-          // Extraer IDs de los documentos subidos y agregar al contexto global
-          const documentIds = results.map(result => result.document.id)
-          
-          // Agregar cada documento al contexto global
-          fileArray.forEach((file, index) => {
-            addDocument(file, documentIds[index])
-          })
+      // Extraer IDs de los documentos subidos y agregar al contexto global
+      const documentIds = results.map(result => result.document.id)
+      
+      // Agregar cada documento al contexto global
+      fileArray.forEach((file, index) => {
+        addDocument(file, documentIds[index])
+      })
 
-          toast({
-            title: "Documentos subidos",
-            description: `${fileArray.length} documento(s) subido(s) exitosamente.`
-          })
+      // Registrar la subida de documentos en el historial del chat
+      const fileNames = fileArray.map(file => file.name).join(', ')
+      await addMessage({
+        type: 'user',
+        content: `📎 Documentos adjuntados: ${fileNames}`,
+      }, sessionId)
+
+      // Mensaje del asistente confirmando la recepción
+      await addMessage({
+        type: 'assistant',
+        content: `✅ He recibido ${fileArray.length} documento(s): **${fileNames}**\n\nYa puedes hacerme preguntas específicas sobre el contenido de estos documentos. Los analizaré automáticamente para darte respuestas precisas basadas en la información que contienen.`,
+      }, sessionId)
+
+      toast({
+        title: "Documentos subidos",
+        description: `${fileArray.length} documento(s) subido(s) exitosamente.`
+      })
     } catch (error) {
       console.error("Error uploading documents:", error)
       toast({
@@ -605,7 +649,30 @@ export default function ChatInterface({ className }: ChatInterfaceProps) {
                             <Volume2 className="w-5 h-5 text-green-400" />
                           </div>
                           <div className="flex-1">
-                            <p className="text-sm text-white/90 mb-1">Respuesta de audio</p>
+                            <div className="flex items-center justify-between mb-1">
+                              <p className="text-sm text-white/90">Respuesta de audio</p>
+                              {message.audioTranscription && (
+                                <Button
+                                  onClick={() => toggleTranscription(message.id)}
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-6 px-2 text-xs text-white/60 hover:text-white hover:bg-white/10 transition-all"
+                                  title={showTranscriptions.has(message.id) ? "Ocultar transcripción" : "Ver transcripción"}
+                                >
+                                  {showTranscriptions.has(message.id) ? (
+                                    <>
+                                      <EyeOff className="w-3 h-3 mr-1" />
+                                      Ocultar texto
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Eye className="w-3 h-3 mr-1" />
+                                      Ver texto
+                                    </>
+                                  )}
+                                </Button>
+                              )}
+                            </div>
                             <audio 
                               controls 
                               className="w-full h-8 bg-white/10 rounded-lg [&::-webkit-media-controls-panel]:bg-white/10 [&::-webkit-media-controls-play-button]:bg-white/20 [&::-webkit-media-controls-play-button]:rounded"
@@ -625,6 +692,33 @@ export default function ChatInterface({ className }: ChatInterfaceProps) {
                               <source src={message.audioUrl} type="audio/webm" />
                               Tu navegador no soporta el elemento de audio.
                             </audio>
+                            
+                            {/* Transcripción desplegable */}
+                            {message.audioTranscription && showTranscriptions.has(message.id) && (
+                              <div className="mt-3 p-3 bg-white/5 rounded-lg border border-white/10">
+                                <p className="text-xs text-white/70 mb-2 font-medium">Transcripción:</p>
+                                <div className="text-white prose prose-invert prose-sm max-w-none">
+                                  <ReactMarkdown
+                                    components={{
+                                      h1: ({children}) => <h1 className="text-lg font-bold text-white mb-2 mt-3">{children}</h1>,
+                                      h2: ({children}) => <h2 className="text-base font-semibold text-white mb-2 mt-2">{children}</h2>,
+                                      h3: ({children}) => <h3 className="text-sm font-medium text-white mb-1 mt-2">{children}</h3>,
+                                      p: ({children}) => <p className="text-white mb-2 leading-relaxed text-sm">{children}</p>,
+                                      ul: ({children}) => <ul className="text-white mb-2 ml-4 list-disc space-y-1 text-sm">{children}</ul>,
+                                      ol: ({children}) => <ol className="text-white mb-2 ml-4 list-decimal space-y-1 text-sm">{children}</ol>,
+                                      li: ({children}) => <li className="text-white text-sm">{children}</li>,
+                                      strong: ({children}) => <strong className="font-semibold text-white">{children}</strong>,
+                                      em: ({children}) => <em className="italic text-white">{children}</em>,
+                                      code: ({children}) => <code className="bg-white/10 text-blue-200 px-1 py-0.5 rounded text-xs">{children}</code>,
+                                      pre: ({children}) => <pre className="bg-white/10 text-blue-200 p-2 rounded-md overflow-x-auto text-xs mb-2">{children}</pre>,
+                                      blockquote: ({children}) => <blockquote className="border-l-4 border-blue-400 pl-3 text-white/90 italic mb-2 text-sm">{children}</blockquote>,
+                                    }}
+                                  >
+                                    {message.audioTranscription}
+                                  </ReactMarkdown>
+                                </div>
+                              </div>
+                            )}
                           </div>
                         </div>
                       </div>

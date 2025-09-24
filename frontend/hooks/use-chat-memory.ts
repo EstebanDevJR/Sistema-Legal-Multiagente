@@ -10,6 +10,7 @@ export interface ChatMessage {
   timestamp: Date
   audioUrl?: string
   transcription?: string
+  audioTranscription?: string // Transcripción del audio de respuesta del asistente
   sources?: any[]
   confidence?: number
   area?: string
@@ -98,6 +99,7 @@ export function useChatMemory() {
         content: message.content,
         audio_url: message.audioUrl,
         transcription: message.transcription,
+        audio_transcription: message.audioTranscription,
         sources: message.sources,
         confidence: message.confidence,
         area: message.area
@@ -107,6 +109,7 @@ export function useChatMemory() {
       const messageWithDate = {
         ...newMessage,
         audioUrl: newMessage.audio_url, // Convert snake_case to camelCase
+        audioTranscription: newMessage.audio_transcription,
         timestamp: new Date(newMessage.timestamp)
       }
       
@@ -147,6 +150,7 @@ export function useChatMemory() {
       if (updates.content !== undefined) updateData.content = updates.content
       if (updates.audioUrl !== undefined) updateData.audio_url = updates.audioUrl
       if (updates.transcription !== undefined) updateData.transcription = updates.transcription
+      if (updates.audioTranscription !== undefined) updateData.audio_transcription = updates.audioTranscription
       if (updates.sources !== undefined) updateData.sources = updates.sources
       if (updates.confidence !== undefined) updateData.confidence = updates.confidence
       if (updates.area !== undefined) updateData.area = updates.area
@@ -182,6 +186,7 @@ export function useChatMemory() {
       const messagesWithDates = messages.map(message => ({
         ...message,
         audioUrl: message.audio_url, // Convert snake_case to camelCase
+        audioTranscription: message.audio_transcription,
         timestamp: new Date(message.timestamp)
       }))
       

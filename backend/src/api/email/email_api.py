@@ -28,6 +28,8 @@ class ChatMessage(BaseModel):
     audioUrl: Optional[str] = None
     audio_url: Optional[str] = None  # Para compatibilidad
     transcription: Optional[str] = None
+    audioTranscription: Optional[str] = None  # Transcripción del audio de respuesta
+    audio_transcription: Optional[str] = None  # Para compatibilidad snake_case
     sources: Optional[List[Dict[str, Any]]] = []
     confidence: Optional[float] = None
     area: Optional[str] = None
@@ -298,9 +300,23 @@ def create_email_template(messages: List[ChatMessage], session_title: str, times
                     html_content += f'<div class="source">📄 {source_title}</div>'
                 html_content += '</div>'
         
-        # Nota de audio si existe
+        # Usar transcripción de audio si existe, sino mostrar nota de audio
         if message.audioUrl:
-            html_content += '<div class="audio-note">🔊 Esta respuesta incluía audio</div>'
+            audio_transcription = (
+                message.audioTranscription or 
+                message.audio_transcription or 
+                getattr(message, 'audioTranscription', None) or
+                getattr(message, 'audio_transcription', None)
+            )
+            if audio_transcription:
+                # Si hay transcripción, usar eso en lugar del content original
+                html_content = html_content.replace(
+                    f'<div class="message-content">{message.content}</div>',
+                    f'<div class="message-content">{audio_transcription}</div>'
+                )
+                html_content += '<div class="audio-note">🔊 Respuesta convertida de audio a texto</div>'
+            else:
+                html_content += '<div class="audio-note">🔊 Esta respuesta incluía audio</div>'
         
         html_content += '</div>'
     
@@ -371,6 +387,7 @@ async def send_conversation_flexible(request_data: dict):
                 'timestamp': msg.get('timestamp', timestamp),
                 'audioUrl': msg.get('audioUrl') or msg.get('audio_url'),
                 'transcription': msg.get('transcription'),
+                'audioTranscription': msg.get('audioTranscription') or msg.get('audio_transcription'),
                 'sources': msg.get('sources', []),
                 'confidence': msg.get('confidence'),
                 'area': msg.get('area')
@@ -408,6 +425,7 @@ async def send_conversation_flexible(request_data: dict):
                         timestamp=msg.get('timestamp', timestamp),
                         audioUrl=msg.get('audioUrl'),
                         transcription=msg.get('transcription'),
+                        audioTranscription=msg.get('audioTranscription'),
                         sources=msg.get('sources', []),
                         confidence=msg.get('confidence'),
                         area=msg.get('area')
@@ -439,7 +457,13 @@ Conversación generada el {timestamp}
 """
             for message in messages_for_template:
                 sender = "Usuario" if message['type'] == 'user' else "Asistente Legal"
-                text_content += f"{sender}: {message['content']}\n\n"
+                # Usar transcripción de audio si existe
+                content_to_use = message['content']
+                if message.get('audioUrl') and message.get('audioTranscription'):
+                    content_to_use = message['audioTranscription']
+                    text_content += f"{sender}: {content_to_use}\n[Respuesta convertida de audio a texto]\n\n"
+                else:
+                    text_content += f"{sender}: {content_to_use}\n\n"
             
             text_content += "\n---\nEste email fue generado por el Sistema Legal Multiagente"
             
