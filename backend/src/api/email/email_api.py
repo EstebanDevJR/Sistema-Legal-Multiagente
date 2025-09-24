@@ -268,6 +268,13 @@ def create_email_template(messages: List[ChatMessage], session_title: str, times
         avatar_text = "👤" if message.type == 'user' else "🤖"
         sender_name = "Usuario" if message.type == 'user' else "Asistente Legal"
         
+        # Determinar el contenido a mostrar (usar transcripción de audio si existe)
+        content_to_display = message.content
+        if message.audioUrl and hasattr(message, 'audioTranscription') and message.audioTranscription:
+            content_to_display = message.audioTranscription
+        elif message.audioUrl and hasattr(message, 'audio_transcription') and message.audio_transcription:
+            content_to_display = message.audio_transcription
+        
         html_content += f"""
             <div class="message {message_class}">
                 <div class="message-header">
@@ -275,7 +282,7 @@ def create_email_template(messages: List[ChatMessage], session_title: str, times
                     <strong>{sender_name}</strong>
                     <span class="message-time">{msg_time}</span>
                 </div>
-                <div class="message-content">{message.content}</div>
+                <div class="message-content">{content_to_display}</div>
         """
         
         # Agregar metadatos si es un mensaje del asistente
@@ -300,20 +307,9 @@ def create_email_template(messages: List[ChatMessage], session_title: str, times
                     html_content += f'<div class="source">📄 {source_title}</div>'
                 html_content += '</div>'
         
-        # Usar transcripción de audio si existe, sino mostrar nota de audio
+        # Nota de audio si existe
         if message.audioUrl:
-            audio_transcription = (
-                message.audioTranscription or 
-                message.audio_transcription or 
-                getattr(message, 'audioTranscription', None) or
-                getattr(message, 'audio_transcription', None)
-            )
-            if audio_transcription:
-                # Si hay transcripción, usar eso en lugar del content original
-                html_content = html_content.replace(
-                    f'<div class="message-content">{message.content}</div>',
-                    f'<div class="message-content">{audio_transcription}</div>'
-                )
+            if content_to_display != message.content:
                 html_content += '<div class="audio-note">🔊 Respuesta convertida de audio a texto</div>'
             else:
                 html_content += '<div class="audio-note">🔊 Esta respuesta incluía audio</div>'

@@ -29,7 +29,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Llamar al backend de Python para enviar el email (usando endpoint flexible para debug)
-    const backendResponse = await fetch('http://localhost:8000/email/send-conversation-flexible', {
+    const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
+    const backendResponse = await fetch(`${API_BASE_URL}/email/send-conversation-flexible`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

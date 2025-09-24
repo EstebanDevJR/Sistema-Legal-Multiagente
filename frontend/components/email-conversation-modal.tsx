@@ -29,7 +29,8 @@ export default function EmailConversationModal({
   const testConnection = async () => {
     setIsTestingConnection(true)
     try {
-      const response = await fetch('http://localhost:8000/email/test')
+      const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
+      const response = await fetch(`${API_BASE_URL}/email/test`)
       const result = await response.json()
       
       if (response.ok) {
@@ -44,7 +45,7 @@ export default function EmailConversationModal({
       console.error('Connection test failed:', error)
       toast({
         title: "❌ Error de conexión",
-        description: "No se pudo conectar con el servidor de email. Asegúrate de que el backend esté ejecutándose en http://localhost:8000",
+        description: "No se pudo conectar con el servidor de email. Verifica que el backend esté funcionando correctamente.",
         variant: "destructive"
       })
     } finally {
