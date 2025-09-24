@@ -197,6 +197,11 @@ export default function ChatInterface({ className }: ChatInterfaceProps) {
 
     if (!userMessage) {
       console.error('Failed to add user message')
+      toast({
+        title: "Error de conexión",
+        description: "No se pudo enviar el mensaje. La sesión puede haberse perdido. Intenta nuevamente.",
+        variant: "destructive"
+      })
       return
     }
 

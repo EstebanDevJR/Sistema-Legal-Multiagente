@@ -126,6 +126,21 @@ export function useChatMemory() {
       return messageWithDate
     } catch (error) {
       console.error('Error adding message:', error)
+      
+      // Si el error es "Sesión no encontrada", intentar recrear la sesión
+      if (error instanceof Error && error.message.includes('Sesión no encontrada')) {
+        console.log('🔄 Sesión perdida, intentando recrear...')
+        try {
+          const newSession = await createNewSession()
+          if (newSession) {
+            console.log('✅ Nueva sesión creada:', newSession.id)
+            // Reintentar agregar el mensaje con la nueva sesión
+            return await addMessage(message, newSession.id)
+          }
+        } catch (recreateError) {
+          console.error('❌ Error recreando sesión:', recreateError)
+        }
+      }
     }
   }, [currentSessionId, createNewSession])
 
@@ -159,7 +174,12 @@ export function useChatMemory() {
       console.log(`✅ Message ${messageId} updated successfully in backend`)
     } catch (error) {
       console.error('❌ Error updating message in backend:', error)
-      // Could implement retry logic or show error to user
+      
+      // Si el error es "Sesión no encontrada", la sesión se perdió
+      if (error instanceof Error && error.message.includes('Sesión no encontrada')) {
+        console.log('⚠️ Sesión perdida durante actualización de mensaje')
+        // Aquí podrías mostrar una notificación al usuario
+      }
     }
   }, [currentSessionId])
 
@@ -197,8 +217,20 @@ export function useChatMemory() {
     } catch (error) {
       console.error('❌ Error loading session messages:', error)
       console.error('Error details:', error)
-      setCurrentSessionId(sessionId)
-      setCurrentMessages([])
+      
+      // Si el error es "Sesión no encontrada", remover de la lista de sesiones
+      if (error instanceof Error && error.message.includes('Sesión no encontrada')) {
+        console.log('🗑️ Removing lost session from list:', sessionId)
+        setSessions(prev => prev.filter(s => s.id !== sessionId))
+        // Si era la sesión actual, limpiar
+        if (currentSessionId === sessionId) {
+          setCurrentSessionId(null)
+          setCurrentMessages([])
+        }
+      } else {
+        setCurrentSessionId(sessionId)
+        setCurrentMessages([])
+      }
     } finally {
       setIsLoadingSession(false)
     }
