@@ -306,36 +306,46 @@ class WorkflowNodes:
                 "has_specific_documents": state.get("has_specific_documents", False)
             })
             
-            # Parsear respuesta JSON con manejo de errores mejorado
             if not response.content or not response.content.strip():
                 logger.warning("⚠️ Respuesta vacía del evaluador, usando fallback")
-                evaluation = {
-                    "final_answer": "Lo siento, hubo un problema técnico al procesar tu consulta. Por favor, intenta de nuevo.",
-                    "confidence": 0.5,
-                    "suggestions": ["Intenta reformular tu pregunta", "Verifica que la consulta sea clara"],
-                    "relates_to_previous": False,
-                    "context_summary": "Error técnico en evaluación"
-                }
+                final_answer = "Lo siento, hubo un problema técnico al procesar tu consulta. Por favor, intenta de nuevo."
+                confidence = 0.5
+                suggestions = ["Intenta reformular tu pregunta", "Verifica que la consulta sea clara"]
             else:
-                try:
-                    evaluation = json.loads(response.content)
-                except json.JSONDecodeError as json_error:
-                    logger.warning(f"⚠️ Error JSON en evaluador: {json_error}")
-                    logger.warning(f"📝 Contenido recibido: '{response.content[:200]}...'")
-                    # Usar el contenido como respuesta directa si no es JSON válido
-                    evaluation = {
-                        "final_answer": response.content,
-                        "confidence": 0.7,
-                        "suggestions": ["¿Necesitas más detalles sobre este tema?", "¿Hay algo específico que te interese?"],
-                        "relates_to_previous": False,
-                        "context_summary": "Respuesta procesada sin formato JSON"
-                    }
+                # Log del contenido recibido para debugging
+                logger.info(f"📝 Respuesta consolidada del evaluador: '{response.content[:300]}...'")
+                
+                # Usar directamente la respuesta del evaluador como respuesta final
+                final_answer = response.content.strip()
+                
+                # Calcular confidence basado en la calidad de las respuestas de los agentes
+                agent_confidences = [resp.get("confidence", 0.7) for resp in state["responses"].values()]
+                confidence = sum(agent_confidences) / len(agent_confidences) if agent_confidences else 0.8
+                
+                # Generar sugerencias basadas en el área legal y contexto
+                legal_area = state.get("legal_area", "general")
+                if legal_area == "civil":
+                    suggestions = ["¿Necesitas información sobre plazos específicos?", "¿Te interesa conocer los documentos requeridos?", "¿Quieres saber sobre costos del proceso?"]
+                elif legal_area == "comercial":
+                    suggestions = ["¿Necesitas información sobre registro mercantil?", "¿Te interesa conocer obligaciones fiscales?", "¿Quieres saber sobre contratos comerciales?"]
+                elif legal_area == "laboral":
+                    suggestions = ["¿Necesitas información sobre liquidación laboral?", "¿Te interesa conocer derechos del trabajador?", "¿Quieres saber sobre procesos laborales?"]
+                elif legal_area == "tributario":
+                    suggestions = ["¿Necesitas información sobre declaración de renta?", "¿Te interesa conocer sanciones tributarias?", "¿Quieres saber sobre recursos tributarios?"]
+                else:
+                    suggestions = ["¿Necesitas más detalles sobre este tema?", "¿Hay algo específico que te interese?", "¿Quieres información sobre procedimientos?"]
+                
+                logger.info("✅ Respuesta del evaluador procesada exitosamente")
             
-            state["final_answer"] = evaluation["final_answer"]
-            state["confidence"] = evaluation["confidence"]
-            state["suggestions"] = evaluation.get("suggestions", [])
-            state["metadata"]["evaluation"] = evaluation
-            state["metadata"]["evaluation"]["timestamp"] = datetime.now().isoformat()
+            state["final_answer"] = final_answer
+            state["confidence"] = confidence
+            state["suggestions"] = suggestions
+            state["metadata"]["evaluation"] = {
+                "source": "evaluator_direct_response",
+                "agent_confidences": agent_confidences if 'agent_confidences' in locals() else [],
+                "legal_area": legal_area if 'legal_area' in locals() else "general",
+                "timestamp": datetime.now().isoformat()
+            }
             
             logger.info("✅ Evaluación completada exitosamente")
             

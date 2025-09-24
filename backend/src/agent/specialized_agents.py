@@ -216,15 +216,9 @@ CRITERIOS DE CALIDAD:
 - Si hay análisis documento específico, úsalo ÚNICAMENTE
 - Si seguimiento, conecta con contexto previo
 
-Responde en formato JSON:
-{{
-  "final_answer": "respuesta mejorada técnicamente pero práctica",
-  "confidence": 0.85,
-  "suggestions": ["pregunta1", "pregunta2"],
-  "relates_to_previous": true/false,
-  "context_summary": "breve resumen de cómo se relaciona con conversaciones anteriores",
-  "technical_improvements": "qué mejoras técnicas aplicaste"
-}}
+RESPONDE DIRECTAMENTE con la respuesta consolidada y mejorada. NO uses formato JSON, solo texto natural y completo que el usuario pueda leer directamente.
+
+Tu respuesta debe ser la versión FINAL y MEJORADA que recibirá el usuario.
 
 Respuestas de agentes: {agent_responses}
 Pregunta original: {question}
