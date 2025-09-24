@@ -14,6 +14,8 @@ import { useChatMemoryContext } from "@/contexts/ChatMemoryContext"
 import { useDocuments } from "@/contexts/DocumentContext"
 import type { LegalQueryResponse } from "@/lib/api-types"
 import { apiClient } from "@/lib/api-client"
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
 import EmailConversationModal from "@/components/email-conversation-modal"
 import ReactMarkdown from "react-markdown"
 import { 
@@ -45,6 +47,7 @@ export default function ChatInterface({ className }: ChatInterfaceProps) {
   const [isEmailModalOpen, setIsEmailModalOpen] = useState(false)
   const [streamingMessage, setStreamingMessage] = useState<string>("")
   const [isStreaming, setIsStreaming] = useState(false)
+  const [lastSubmitTime, setLastSubmitTime] = useState<number>(0)
   
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -142,18 +145,34 @@ export default function ChatInterface({ className }: ChatInterfaceProps) {
   // Don't auto-create sessions - let user start conversations manually
 
   const handleTextSubmit = async () => {
-    if (!inputText.trim() || isProcessing) return
+    const now = Date.now()
+    const timeSinceLastSubmit = now - lastSubmitTime
+    
+    if (!inputText.trim() || isProcessing || timeSinceLastSubmit < 1000) {
+      console.log('❌ Submit blocked:', { 
+        inputText: inputText.trim(), 
+        isProcessing, 
+        timeSinceLastSubmit,
+        minWait: 1000 
+      })
+      return
+    }
 
+    console.log('🚀 Starting text submit with:', inputText.trim())
+    setLastSubmitTime(now)
+    
     // Create session if none exists and wait for it to complete
     let sessionId = currentSessionId
     if (!sessionId) {
+      console.log('📝 Creating new session...')
       const newSession = await createNewSession()
       sessionId = newSession?.id || null
       
       if (!sessionId) {
-        console.error('Failed to create session')
+        console.error('❌ Failed to create session')
         return
       }
+      console.log('✅ Session created:', sessionId)
     }
 
     const userMessage = await addMessage({
@@ -360,7 +379,7 @@ export default function ChatInterface({ className }: ChatInterfaceProps) {
         formData.append('document_type', 'legal_document')
         formData.append('description', `Documento subido desde chat: ${file.name}`)
 
-        const response = await fetch('http://localhost:8000/documents/upload', {
+        const response = await fetch(`${API_BASE_URL}/documents/upload`, {
           method: 'POST',
           body: formData
         })
